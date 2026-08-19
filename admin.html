@@ -1,0 +1,2187 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Ezmoire — Admin
+    </title>
+
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+
+    <style>
+
+        .admin-wrap {
+
+            width:
+                min(
+                    1050px,
+                    calc(100% - 32px)
+                );
+
+            margin:
+                40px auto 80px;
+
+        }
+
+
+        .admin-top {
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items: center;
+
+            gap: 20px;
+
+            margin-bottom: 30px;
+
+        }
+
+
+        .admin-top h1 {
+
+            font-family:
+                "Space Grotesk";
+
+            font-size: 34px;
+
+        }
+
+
+        .admin-panel {
+
+            border:
+                1px solid var(--line);
+
+            background:
+                var(--card);
+
+            border-radius: 22px;
+
+            padding: 25px;
+
+            margin-bottom: 25px;
+
+        }
+
+
+        .admin-panel h2 {
+
+            font-family:
+                "Space Grotesk";
+
+            font-size: 22px;
+
+            margin-bottom: 20px;
+
+        }
+
+
+        .form-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            gap: 15px;
+
+        }
+
+
+        .field {
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 7px;
+
+        }
+
+
+        .field.full {
+
+            grid-column:
+                1 / -1;
+
+        }
+
+
+        .field label {
+
+            font-size: 10px;
+
+            color:
+                var(--muted-2);
+
+            letter-spacing: 1px;
+
+            font-weight: 700;
+
+        }
+
+
+        .field input,
+        .field textarea {
+
+            background:
+                var(--input);
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 10px;
+
+            padding: 12px;
+
+            color:
+                var(--text);
+
+            outline: none;
+
+            font: inherit;
+
+        }
+
+
+        .field textarea {
+
+            min-height: 90px;
+
+            resize: vertical;
+
+        }
+
+
+        .field input:focus,
+        .field textarea:focus {
+
+            border-color:
+                #36cfff;
+
+        }
+
+
+        .check-section {
+
+            grid-column:
+                1 / -1;
+
+            padding:
+                18px;
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 13px;
+
+            background:
+                var(--bg-secondary);
+
+        }
+
+
+        .check-section h3 {
+
+            font-family:
+                "Space Grotesk";
+
+            font-size: 14px;
+
+            margin-bottom: 13px;
+
+        }
+
+
+        .check-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 8px;
+
+        }
+
+
+        .check-item {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            padding:
+                9px 10px;
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 9px;
+
+            color:
+                var(--muted);
+
+            font-size: 11px;
+
+            cursor: pointer;
+
+        }
+
+
+        .check-item:hover {
+
+            border-color:
+                #4dd7ff77;
+
+        }
+
+
+        .check-item input {
+
+            accent-color:
+                #28c9ff;
+
+            width: 15px;
+
+            height: 15px;
+
+        }
+
+
+        .admin-btn {
+
+            border: 0;
+
+            border-radius: 10px;
+
+            padding:
+                12px 18px;
+
+            color: white;
+
+            background:
+                linear-gradient(
+                    100deg,
+                    #6435e9,
+                    #13b9e9
+                );
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            margin-top: 18px;
+
+        }
+
+
+        .secondary-btn {
+
+            background:
+                var(--bg-secondary);
+
+            border:
+                1px solid var(--line);
+
+            color:
+                var(--text);
+
+        }
+
+
+        .login {
+
+            max-width: 420px;
+
+            margin:
+                120px auto;
+
+        }
+
+
+        .login h1 {
+
+            text-align: center;
+
+            font-family:
+                "Space Grotesk";
+
+            font-size: 40px;
+
+            margin-bottom: 25px;
+
+        }
+
+
+        .error {
+
+            color:
+                #ff759f;
+
+            font-size: 12px;
+
+            margin-top: 10px;
+
+        }
+
+
+        .note {
+
+            font-size: 11px;
+
+            color:
+                var(--muted-2);
+
+            line-height: 1.6;
+
+            margin-top: 12px;
+
+        }
+
+
+        .template-row {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 15px;
+
+            padding:
+                14px 0;
+
+            border-bottom:
+                1px solid var(--line);
+
+        }
+
+
+        .template-row:last-child {
+            border: 0;
+        }
+
+
+        .thumb {
+
+            width: 70px;
+
+            height: 70px;
+
+            border-radius: 10px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #321878,
+                    #0b6e9d
+                );
+
+            background-size: cover;
+
+            background-position: center;
+
+            flex: none;
+
+        }
+
+
+        .row-main {
+
+            flex: 1;
+
+        }
+
+
+        .row-main b {
+
+            font-family:
+                "Space Grotesk";
+
+        }
+
+
+        .row-main small {
+
+            display: block;
+
+            color:
+                var(--muted-2);
+
+            margin-top: 4px;
+
+            line-height: 1.6;
+
+        }
+
+
+        .row-price {
+
+            color:
+                #55d9ff;
+
+            font-weight: 700;
+
+            font-size: 14px;
+
+            white-space: nowrap;
+
+        }
+
+
+        .row-actions {
+
+            display: flex;
+
+            gap: 7px;
+
+        }
+
+
+        .row-actions button {
+
+            background:
+                var(--bg-secondary);
+
+            color:
+                var(--text);
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 8px;
+
+            padding:
+                8px 10px;
+
+            cursor: pointer;
+
+        }
+
+
+        .row-actions .danger {
+
+            color:
+                #ff87a7;
+
+        }
+
+
+        @media (max-width: 700px) {
+
+            .form-grid {
+
+                grid-template-columns: 1fr;
+
+            }
+
+
+            .field.full {
+
+                grid-column: auto;
+
+            }
+
+
+            .check-section {
+
+                grid-column: auto;
+
+            }
+
+
+            .check-grid {
+
+                grid-template-columns:
+                    1fr 1fr;
+
+            }
+
+
+            .template-row {
+
+                align-items:
+                    flex-start;
+
+                flex-wrap: wrap;
+
+            }
+
+
+            .row-actions {
+
+                width: 100%;
+
+            }
+
+
+            .row-price {
+
+                margin-left: auto;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="admin-wrap">
+
+
+    <!-- LOGIN -->
+
+
+    <div
+        id="loginBox"
+        class="login admin-panel"
+    >
+
+
+        <h1>
+
+            Ezmoire<span class="dot">.</span>
+
+        </h1>
+
+
+        <div class="field">
+
+            <label>
+                ADMIN PASSWORD
+            </label>
+
+            <input
+                id="password"
+                type="password"
+                placeholder="Masukkan password"
+            >
+
+        </div>
+
+
+        <button
+            class="admin-btn"
+            onclick="login()"
+        >
+            Login to Dashboard
+        </button>
+
+
+        <div
+            id="loginError"
+            class="error"
+        ></div>
+
+
+        <p class="note">
+
+            Login ini masih menggunakan
+            localStorage karena versi ini
+            berjalan secara lokal.
+
+        </p>
+
+
+    </div>
+
+
+
+    <!-- DASHBOARD -->
+
+
+    <div
+        id="dashboard"
+        class="hidden"
+    >
+
+
+        <div class="admin-top">
+
+
+            <div>
+
+                <div class="eyebrow">
+                    ADMIN DASHBOARD
+                </div>
+
+                <h1>
+                    Manage Templates
+                </h1>
+
+            </div>
+
+
+            <div
+                style="
+                    display:flex;
+                    gap:8px;
+                    flex-wrap:wrap;
+                "
+            >
+
+                <button
+                    class="btn ghost"
+                    onclick="toggleAdminTheme()"
+                >
+                    ☾ / ☀
+                </button>
+
+
+                <a
+                    class="btn ghost"
+                    href="index.html"
+                >
+                    View Website ↗
+                </a>
+
+
+                <button
+                    class="btn ghost"
+                    onclick="logout()"
+                >
+                    Logout
+                </button>
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- FORM -->
+
+
+        <div class="admin-panel">
+
+
+            <h2 id="formTitle">
+                Tambah Template
+            </h2>
+
+
+            <input
+                type="hidden"
+                id="editIndex"
+                value="-1"
+            >
+
+
+            <div class="form-grid">
+
+
+                <div class="field">
+
+                    <label>
+                        NAMA TEMPLATE
+                    </label>
+
+                    <input
+                        id="title"
+                        placeholder="A Moment Worth Keeping"
+                    >
+
+                </div>
+
+
+                <div class="field">
+
+                    <label>
+                        HARGA
+                    </label>
+
+                    <input
+                        id="price"
+                        type="number"
+                        min="0"
+                        placeholder="75000"
+                    >
+
+                </div>
+
+
+                <div class="field full">
+
+                    <label>
+                        DESKRIPSI
+                    </label>
+
+                    <textarea
+                        id="description"
+                        placeholder="Deskripsi singkat template..."
+                    ></textarea>
+
+                </div>
+
+
+
+                <!-- CATEGORY -->
+
+
+                <div class="check-section">
+
+
+                    <h3>
+                        KATEGORI TEMPLATE
+                    </h3>
+
+
+                    <div class="check-grid">
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="categories"
+                                value="Romantic"
+                            >
+                            Romantic
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="categories"
+                                value="Elegant"
+                            >
+                            Elegant
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="categories"
+                                value="Cute"
+                            >
+                            Cute
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="categories"
+                                value="Minimalist"
+                            >
+                            Minimalist
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="categories"
+                                value="Dark"
+                            >
+                            Dark
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="categories"
+                                value="Blue"
+                            >
+                            Blue
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="categories"
+                                value="Floral"
+                            >
+                            Floral
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="categories"
+                                value="Friendship"
+                            >
+                            Friendship
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="categories"
+                                value="Family"
+                            >
+                            Family
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="categories"
+                                value="Fun"
+                            >
+                            Fun
+                        </label>
+
+
+                    </div>
+
+
+                </div>
+
+
+
+                <!-- FEATURES -->
+
+
+                <div class="check-section">
+
+
+                    <h3>
+                        FITUR YANG TERSEDIA
+                    </h3>
+
+
+                    <div class="check-grid">
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="features"
+                                value="Custom Nama"
+                            >
+                            Custom Nama
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="features"
+                                value="Ucapan"
+                            >
+                            Ucapan
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="features"
+                                value="Foto"
+                            >
+                            Foto
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="features"
+                                value="Musik"
+                            >
+                            Musik
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="features"
+                                value="Dapat Animasi"
+                            >
+                            Dapat Animasi
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="features"
+                                value="Link Website"
+                            >
+                            Link Website
+                        </label>
+
+
+                    </div>
+
+
+                </div>
+
+
+
+                <!-- WHO IS IT FOR -->
+
+
+                <div class="check-section">
+
+
+                    <h3>
+                        WHO IS IT FOR?
+                    </h3>
+
+
+                    <div class="check-grid">
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="audiences"
+                                value="Pacar"
+                            >
+                            ♡ Pacar
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="audiences"
+                                value="Sahabat"
+                            >
+                            ♡ Sahabat
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="audiences"
+                                value="Keluarga"
+                            >
+                            ♡ Keluarga
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="audiences"
+                                value="Teman"
+                            >
+                            ♡ Teman
+                        </label>
+
+
+                        <label class="check-item">
+                            <input
+                                type="checkbox"
+                                name="audiences"
+                                value="Lainnya"
+                            >
+                            ✦ Lainnya
+                        </label>
+
+
+                    </div>
+
+
+                </div>
+
+
+
+                <!-- PREVIEW -->
+
+
+                <div class="field">
+
+                    <label>
+                        LINK PREVIEW WEBSITE
+                    </label>
+
+                    <input
+                        id="preview"
+                        placeholder="https://..."
+                    >
+
+                </div>
+
+
+
+                <!-- COVER -->
+
+
+                <div class="field">
+
+                    <label>
+                        UPLOAD SAMPUL
+                    </label>
+
+                    <input
+                        id="coverFile"
+                        type="file"
+                        accept="image/*"
+                    >
+
+                </div>
+
+
+            </div>
+
+
+
+            <button
+                class="admin-btn"
+                onclick="saveTemplate()"
+            >
+                Simpan Template
+            </button>
+
+
+            <button
+                id="cancelBtn"
+                class="admin-btn secondary-btn hidden"
+                onclick="resetForm()"
+            >
+                Batal Edit
+            </button>
+
+
+            <p class="note">
+
+                Kode template dibuat otomatis
+                seperti BD-001, BD-002,
+                BD-003, dan seterusnya.
+
+            </p>
+
+
+        </div>
+
+
+
+        <!-- TEMPLATE LIST -->
+
+
+        <div class="admin-panel">
+
+
+            <h2>
+                Template Kamu
+            </h2>
+
+
+            <div
+                id="templateList"
+            ></div>
+
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+
+<script>
+
+
+const DEFAULT_TEMPLATES = [
+
+    {
+        id: "BD-001",
+
+        title:
+            "A Moment Worth Keeping",
+
+        description:
+            "Elegant, personal, dan penuh kenangan.",
+
+        categories:
+            [
+                "Romantic",
+                "Elegant"
+            ],
+
+        audiences:
+            [
+                "Pacar",
+                "Sahabat"
+            ],
+
+        features:
+            [
+                "Custom Nama",
+                "Ucapan",
+                "Foto",
+                "Musik",
+                "Dapat Animasi",
+                "Link Website"
+            ],
+
+        price:
+            75000,
+
+        cover:
+            "",
+
+        coverClass:
+            "cover-default",
+
+        preview:
+            "#"
+    },
+
+
+    {
+        id: "BD-002",
+
+        title:
+            "Blue Memories",
+
+        description:
+            "Soft blue experience dengan nuansa modern.",
+
+        categories:
+            [
+                "Blue",
+                "Minimalist",
+                "Elegant"
+            ],
+
+        audiences:
+            [
+                "Pacar",
+                "Sahabat",
+                "Teman"
+            ],
+
+        features:
+            [
+                "Custom Nama",
+                "Ucapan",
+                "Foto",
+                "Musik",
+                "Dapat Animasi",
+                "Link Website"
+            ],
+
+        price:
+            85000,
+
+        cover:
+            "",
+
+        coverClass:
+            "cover-blue",
+
+        preview:
+            "#"
+    },
+
+
+    {
+        id: "BD-003",
+
+        title:
+            "Forever & Always",
+
+        description:
+            "Dark, cinematic, dan cocok untuk cerita spesial.",
+
+        categories:
+            [
+                "Dark",
+                "Romantic"
+            ],
+
+        audiences:
+            [
+                "Pacar"
+            ],
+
+        features:
+            [
+                "Custom Nama",
+                "Ucapan",
+                "Foto",
+                "Musik",
+                "Dapat Animasi",
+                "Link Website"
+            ],
+
+        price:
+            100000,
+
+        cover:
+            "",
+
+        coverClass:
+            "cover-night",
+
+        preview:
+            "#"
+    }
+
+];
+
+
+
+function getTemplates() {
+
+    try {
+
+        const saved =
+            JSON.parse(
+                localStorage.getItem(
+                    "ezmoire_templates"
+                )
+            );
+
+
+        if (
+            Array.isArray(saved) &&
+            saved.length
+        ) {
+
+            return saved;
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.log(error);
+
+    }
+
+
+    return DEFAULT_TEMPLATES;
+
+}
+
+
+
+function saveTemplates(data) {
+
+    localStorage.setItem(
+        "ezmoire_templates",
+        JSON.stringify(data)
+    );
+
+}
+
+
+
+function formatPrice(price) {
+
+    return new Intl.NumberFormat(
+        "id-ID",
+        {
+            style: "currency",
+            currency: "IDR",
+            maximumFractionDigits: 0
+        }
+    ).format(
+        Number(price) || 0
+    );
+
+}
+
+
+
+function nextId() {
+
+    const numbers =
+        getTemplates().map(
+            template =>
+                parseInt(
+                    String(
+                        template.id
+                    ).replace(
+                        /\D/g,
+                        ""
+                    )
+                ) || 0
+        );
+
+
+    return (
+        "BD-" +
+        String(
+            Math.max(
+                0,
+                ...numbers
+            ) + 1
+        ).padStart(
+            3,
+            "0"
+        )
+    );
+
+}
+
+
+
+function login() {
+
+    const password =
+        document.getElementById(
+            "password"
+        ).value;
+
+
+    if (
+        password ===
+        "momento123"
+    ) {
+
+        localStorage.setItem(
+            "ezmoire_admin",
+            "1"
+        );
+
+
+        showDashboard();
+
+    }
+
+    else {
+
+        document.getElementById(
+            "loginError"
+        ).textContent =
+            "Password salah.";
+
+    }
+
+}
+
+
+
+function logout() {
+
+    localStorage.removeItem(
+        "ezmoire_admin"
+    );
+
+
+    location.reload();
+
+}
+
+
+
+function showDashboard() {
+
+    document.getElementById(
+        "loginBox"
+    )
+    .classList
+    .add(
+        "hidden"
+    );
+
+
+    document.getElementById(
+        "dashboard"
+    )
+    .classList
+    .remove(
+        "hidden"
+    );
+
+
+    renderList();
+
+}
+
+
+
+function getChecked(name) {
+
+    return Array.from(
+        document.querySelectorAll(
+            `input[name="${name}"]:checked`
+        )
+    ).map(
+        checkbox =>
+            checkbox.value
+    );
+
+}
+
+
+
+function setChecked(
+    name,
+    values
+) {
+
+    document
+        .querySelectorAll(
+            `input[name="${name}"]`
+        )
+        .forEach(
+            checkbox => {
+
+                checkbox.checked =
+                    values.includes(
+                        checkbox.value
+                    );
+
+            }
+        );
+
+}
+
+
+
+function renderList() {
+
+    const list =
+        document.getElementById(
+            "templateList"
+        );
+
+
+    const data =
+        getTemplates();
+
+
+    if (!data.length) {
+
+        list.innerHTML =
+            `
+                <p class="note">
+                    Belum ada template.
+                </p>
+            `;
+
+        return;
+
+    }
+
+
+    list.innerHTML =
+        data.map(
+            (template, index) => `
+
+                <div
+                    class="template-row"
+                >
+
+
+                    <div
+                        class="thumb"
+
+                        ${
+                            template.cover
+                                ? `
+                                    style="
+                                        background-image:
+                                        url('${template.cover}')
+                                    "
+                                `
+                                : ""
+                        }
+                    ></div>
+
+
+                    <div class="row-main">
+
+
+                        <b>
+
+                            ${escapeHtml(
+                                template.id
+                            )}
+
+                            —
+
+                            ${escapeHtml(
+                                template.title
+                            )}
+
+                        </b>
+
+
+                        <small>
+
+                            Kategori:
+                            ${
+                                (template.categories || [])
+                                    .map(
+                                        escapeHtml
+                                    )
+                                    .join(
+                                        ", "
+                                    )
+                            }
+
+                            <br>
+
+                            Untuk:
+                            ${
+                                (template.audiences || [])
+                                    .map(
+                                        escapeHtml
+                                    )
+                                    .join(
+                                        ", "
+                                    )
+                            }
+
+                            <br>
+
+                            Fitur:
+                            ${
+                                (template.features || [])
+                                    .map(
+                                        escapeHtml
+                                    )
+                                    .join(
+                                        ", "
+                                    )
+                            }
+
+                        </small>
+
+
+                    </div>
+
+
+                    <div class="row-price">
+
+                        ${formatPrice(
+                            template.price
+                        )}
+
+                    </div>
+
+
+                    <div class="row-actions">
+
+
+                        <button
+                            onclick="
+                                editTemplate(${index})
+                            "
+                        >
+                            Edit
+                        </button>
+
+
+                        <button
+                            onclick="
+                                previewTemplate(${index})
+                            "
+                        >
+                            Preview
+                        </button>
+
+
+                        <button
+                            class="danger"
+                            onclick="
+                                deleteTemplate(${index})
+                            "
+                        >
+                            Hapus
+                        </button>
+
+
+                    </div>
+
+
+                </div>
+
+            `
+        ).join("");
+
+}
+
+
+
+function saveTemplate() {
+
+    const title =
+        document.getElementById(
+            "title"
+        )
+        .value
+        .trim();
+
+
+    if (!title) {
+
+        alert(
+            "Nama template wajib diisi."
+        );
+
+        return;
+
+    }
+
+
+    const price =
+        Number(
+            document.getElementById(
+                "price"
+            ).value
+        );
+
+
+    if (
+        isNaN(price) ||
+        price < 0
+    ) {
+
+        alert(
+            "Masukkan harga yang valid."
+        );
+
+        return;
+
+    }
+
+
+    const categories =
+        getChecked(
+            "categories"
+        );
+
+
+    const features =
+        getChecked(
+            "features"
+        );
+
+
+    const audiences =
+        getChecked(
+            "audiences"
+        );
+
+
+    if (!categories.length) {
+
+        alert(
+            "Pilih minimal satu kategori."
+        );
+
+        return;
+
+    }
+
+
+    if (!features.length) {
+
+        alert(
+            "Pilih minimal satu fitur."
+        );
+
+        return;
+
+    }
+
+
+    if (!audiences.length) {
+
+        alert(
+            "Pilih minimal satu bagian Who is it for?"
+        );
+
+        return;
+
+    }
+
+
+    const data =
+        getTemplates();
+
+
+    const editIndex =
+        Number(
+            document.getElementById(
+                "editIndex"
+            ).value
+        );
+
+
+    const file =
+        document.getElementById(
+            "coverFile"
+        ).files[0];
+
+
+    function finish(cover) {
+
+        const old =
+            editIndex >= 0
+                ? data[editIndex]
+                : null;
+
+
+        const item = {
+
+            id:
+                old
+                    ? old.id
+                    : nextId(),
+
+
+            title:
+                title,
+
+
+            description:
+                document.getElementById(
+                    "description"
+                ).value.trim(),
+
+
+            categories:
+                categories,
+
+
+            audiences:
+                audiences,
+
+
+            features:
+                features,
+
+
+            price:
+                price,
+
+
+            cover:
+                cover !== undefined
+                    ? cover
+                    : (
+                        old
+                            ? old.cover
+                            : ""
+                    ),
+
+
+            coverClass:
+                old
+                    ? old.coverClass
+                    : "cover-default",
+
+
+            preview:
+                document.getElementById(
+                    "preview"
+                ).value.trim()
+                ||
+                "#"
+
+        };
+
+
+        if (
+            editIndex >= 0
+        ) {
+
+            data[editIndex] =
+                item;
+
+        }
+
+        else {
+
+            data.push(
+                item
+            );
+
+        }
+
+
+        saveTemplates(
+            data
+        );
+
+
+        resetForm();
+
+        renderList();
+
+
+        alert(
+            editIndex >= 0
+                ? "Template berhasil diperbarui!"
+                : "Template berhasil ditambahkan!"
+        );
+
+    }
+
+
+    if (file) {
+
+        const reader =
+            new FileReader();
+
+
+        reader.onload =
+            () => {
+
+                finish(
+                    reader.result
+                );
+
+            };
+
+
+        reader.readAsDataURL(
+            file
+        );
+
+    }
+
+    else {
+
+        finish(
+            undefined
+        );
+
+    }
+
+}
+
+
+
+function editTemplate(index) {
+
+    const template =
+        getTemplates()[index];
+
+
+    document.getElementById(
+        "editIndex"
+    ).value =
+        index;
+
+
+    document.getElementById(
+        "title"
+    ).value =
+        template.title;
+
+
+    document.getElementById(
+        "price"
+    ).value =
+        template.price || 0;
+
+
+    document.getElementById(
+        "description"
+    ).value =
+        template.description || "";
+
+
+    document.getElementById(
+        "preview"
+    ).value =
+        template.preview || "";
+
+
+    setChecked(
+        "categories",
+        template.categories || []
+    );
+
+
+    setChecked(
+        "features",
+        template.features || []
+    );
+
+
+    setChecked(
+        "audiences",
+        template.audiences || []
+    );
+
+
+    document.getElementById(
+        "formTitle"
+    ).textContent =
+        "Edit Template " +
+        template.id;
+
+
+    document.getElementById(
+        "cancelBtn"
+    )
+    .classList
+    .remove(
+        "hidden"
+    );
+
+
+    window.scrollTo({
+
+        top: 0,
+
+        behavior: "smooth"
+
+    });
+
+}
+
+
+
+function resetForm() {
+
+    document.getElementById(
+        "editIndex"
+    ).value =
+        "-1";
+
+
+    document.getElementById(
+        "title"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "price"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "description"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "preview"
+    ).value =
+        "";
+
+
+    document.getElementById(
+        "coverFile"
+    ).value =
+        "";
+
+
+    setChecked(
+        "categories",
+        []
+    );
+
+
+    setChecked(
+        "features",
+        []
+    );
+
+
+    setChecked(
+        "audiences",
+        []
+    );
+
+
+    document.getElementById(
+        "formTitle"
+    ).textContent =
+        "Tambah Template";
+
+
+    document.getElementById(
+        "cancelBtn"
+    )
+    .classList
+    .add(
+        "hidden"
+    );
+
+}
+
+
+
+function deleteTemplate(index) {
+
+    if (
+        !confirm(
+            "Hapus template ini?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const data =
+        getTemplates();
+
+
+    data.splice(
+        index,
+        1
+    );
+
+
+    saveTemplates(
+        data
+    );
+
+
+    renderList();
+
+}
+
+
+
+function previewTemplate(index) {
+
+    const template =
+        getTemplates()[index];
+
+
+    if (
+        template.preview &&
+        template.preview !== "#"
+    ) {
+
+        window.open(
+            template.preview,
+            "_blank"
+        );
+
+    }
+
+    else {
+
+        alert(
+            "Template ini belum memiliki link preview."
+        );
+
+    }
+
+}
+
+
+
+function toggleAdminTheme() {
+
+    const current =
+        document.body.dataset.theme ||
+        "dark";
+
+
+    const next =
+        current === "light"
+            ? "dark"
+            : "light";
+
+
+    document.body.dataset.theme =
+        next;
+
+
+    localStorage.setItem(
+        "ezmoire_theme",
+        next
+    );
+
+}
+
+
+
+function escapeHtml(value) {
+
+    return String(
+        value ?? ""
+    ).replace(
+        /[&<>"']/g,
+
+        character => ({
+
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#039;"
+
+        }[character])
+
+    );
+
+}
+
+
+
+if (
+    localStorage.getItem(
+        "ezmoire_theme"
+    )
+) {
+
+    document.body.dataset.theme =
+        localStorage.getItem(
+            "ezmoire_theme"
+        );
+
+}
+
+
+if (
+    localStorage.getItem(
+        "ezmoire_admin"
+    ) === "1"
+) {
+
+    showDashboard();
+
+}
+
+</script>
+
+
+</body>
+
+</html>
