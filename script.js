@@ -1,411 +1,124 @@
-/* =========================================
-   EZMOIRE
-========================================= */
+/* =====================================================
+   EZMOIRE — ADMIN
+===================================================== */
 
-const WHATSAPP = "6288216358530";
 const ADMIN_PASSWORD = "ezmoire2026";
 
-let templates = JSON.parse(
-    localStorage.getItem("ezmoireTemplates")
-) || [];
 
-let currentCategory = "all";
-let currentAudience = "all";
+let templates = [];
 
 
-/* =========================================
-   INITIALIZE
-========================================= */
+/* =====================================================
+   LOAD
+===================================================== */
 
-document.addEventListener("DOMContentLoaded", () => {
+function loadTemplates() {
 
-    loadTheme();
+    try {
 
-    renderTemplates();
+        templates =
+            JSON.parse(
+                localStorage.getItem(
+                    "ezmoireTemplates"
+                )
+            ) || [];
 
-    renderAdminList();
+    } catch {
 
-    updateAdminStats();
-
-    setupFilters();
-
-    setupModalClose();
-
-});
-
-
-/* =========================================
-   THEME
-========================================= */
-
-function loadTheme() {
-
-    const saved =
-        localStorage.getItem("ezmoireTheme");
-
-    if (saved === "dark") {
-
-        document.body.classList.add("dark");
-
-        document.getElementById("themeBtn").textContent = "☀";
+        templates = [];
 
     }
 
 }
 
 
-document
-    .getElementById("themeBtn")
-    .addEventListener("click", () => {
+/* =====================================================
+   SAVE
+===================================================== */
 
-        document.body.classList.toggle("dark");
+function saveTemplates() {
 
-        const isDark =
-            document.body.classList.contains("dark");
+    localStorage.setItem(
+        "ezmoireTemplates",
+        JSON.stringify(templates)
+    );
 
-        localStorage.setItem(
-            "ezmoireTheme",
-            isDark ? "dark" : "light"
-        );
+}
 
-        document.getElementById("themeBtn").textContent =
-            isDark ? "☀" : "☾";
+
+/* =====================================================
+   FORMAT
+===================================================== */
+
+function rupiah(value) {
+
+    return new Intl.NumberFormat(
+        "id-ID",
+        {
+            style: "currency",
+            currency: "IDR",
+            maximumFractionDigits: 0
+        }
+    ).format(Number(value) || 0);
+
+}
+
+
+function safe(value) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        value ?? "";
+
+    return div.innerHTML;
+
+}
+
+
+/* =====================================================
+   CODE
+===================================================== */
+
+function generateCode() {
+
+    let highest = 0;
+
+
+    templates.forEach(template => {
+
+        const number =
+            parseInt(
+                String(template.code)
+                    .replace("EZ", "")
+            );
+
+
+        if (
+            !isNaN(number) &&
+            number > highest
+        ) {
+
+            highest = number;
+
+        }
 
     });
 
 
-/* =========================================
-   FILTER
-========================================= */
-
-function setupFilters() {
-
-    document
-        .querySelectorAll(".category-btn")
-        .forEach(button => {
-
-            button.addEventListener("click", () => {
-
-                document
-                    .querySelectorAll(".category-btn")
-                    .forEach(item =>
-                        item.classList.remove("active")
-                    );
-
-                button.classList.add("active");
-
-                currentCategory =
-                    button.dataset.category;
-
-                renderTemplates();
-
-            });
-
-        });
-
-
-    document
-        .querySelectorAll(".who-btn")
-        .forEach(button => {
-
-            button.addEventListener("click", () => {
-
-                document
-                    .querySelectorAll(".who-btn")
-                    .forEach(item =>
-                        item.classList.remove("active")
-                    );
-
-                button.classList.add("active");
-
-                currentAudience =
-                    button.dataset.audience;
-
-                renderTemplates();
-
-            });
-
-        });
+    return "EZ" +
+        String(highest + 1)
+            .padStart(3, "0");
 
 }
 
 
-/* =========================================
-   RENDER TEMPLATES
-========================================= */
-
-function renderTemplates() {
-
-    const grid =
-        document.getElementById("templateGrid");
-
-    const empty =
-        document.getElementById("emptyState");
-
-
-    grid.innerHTML = "";
-
-
-    const result = templates.filter(template => {
-
-        const categoryOkay =
-            currentCategory === "all" ||
-            template.categories.includes(
-                currentCategory
-            );
-
-        const audienceOkay =
-            currentAudience === "all" ||
-            template.audience.includes(
-                currentAudience
-            );
-
-        return categoryOkay && audienceOkay;
-
-    });
-
-
-    if (result.length === 0) {
-
-        empty.style.display = "block";
-
-        return;
-
-    }
-
-
-    empty.style.display = "none";
-
-
-    result.forEach(template => {
-
-        const card =
-            document.createElement("article");
-
-        card.className = "template-card";
-
-
-        const tags =
-            template.categories
-                .slice(0, 3)
-                .map(category => `
-                    <span class="template-tag">
-                        ${safe(category)}
-                    </span>
-                `)
-                .join("");
-
-
-        card.innerHTML = `
-
-            <div class="template-cover">
-
-                <img
-                    src="${safe(template.image)}"
-                    alt="${safe(template.title)}"
-                    onerror="
-                        this.src='https://placehold.co/800x1000/15181e/ffffff?text=Ezmoire'
-                    "
-                >
-
-                <span class="template-code">
-                    ${template.code}
-                </span>
-
-            </div>
-
-
-            <div class="template-info">
-
-                <h3>
-                    ${safe(template.title)}
-                </h3>
-
-                <div class="template-price">
-                    ${rupiah(template.price)}
-                </div>
-
-                <div class="template-tags">
-                    ${tags}
-                </div>
-
-                <div class="template-buttons">
-
-                    <button
-                        class="detail-btn"
-                        onclick="openTemplate('${template.id}')"
-                    >
-                        Detail
-                    </button>
-
-                    <button
-                        class="order-btn"
-                        onclick="orderTemplate('${template.id}')"
-                    >
-                        Pesan
-                    </button>
-
-                </div>
-
-            </div>
-        `;
-
-
-        grid.appendChild(card);
-
-    });
-
-}
-
-
-/* =========================================
-   TEMPLATE DETAIL
-========================================= */
-
-function openTemplate(id) {
-
-    const template =
-        templates.find(item => item.id === id);
-
-    if (!template) return;
-
-
-    document.getElementById("detailImage").src =
-        template.image;
-
-    document.getElementById("detailCode").textContent =
-        template.code;
-
-    document.getElementById("detailTitle").textContent =
-        template.title;
-
-    document.getElementById("detailPrice").textContent =
-        rupiah(template.price);
-
-
-    document.getElementById("detailCategories").innerHTML =
-        template.categories
-            .map(item => `
-                <span>${safe(item)}</span>
-            `)
-            .join("");
-
-
-    document.getElementById("detailAudience").innerHTML =
-        template.audience
-            .map(item => `
-                <span>${safe(item)}</span>
-            `)
-            .join("");
-
-
-    document.getElementById("detailFeatures").innerHTML =
-        template.features.length
-            ? template.features
-                .map(item => `
-                    <div>${safe(item)}</div>
-                `)
-                .join("")
-            : "<div>Belum ada fitur khusus.</div>";
-
-
-    const preview =
-        document.getElementById("previewBtn");
-
-    preview.href =
-        template.link || "#";
-
-
-    if (!template.link) {
-
-        preview.onclick = event => {
-
-            event.preventDefault();
-
-            alert(
-                "Preview website belum ditambahkan."
-            );
-
-        };
-
-    } else {
-
-        preview.onclick = null;
-
-    }
-
-
-    document.getElementById(
-        "detailWhatsapp"
-    ).onclick = () => {
-
-        orderTemplate(template.id);
-
-    };
-
-
-    document
-        .getElementById("detailModal")
-        .classList.add("show");
-
-}
-
-
-/* =========================================
-   WHATSAPP
-========================================= */
-
-function orderTemplate(id) {
-
-    const template =
-        templates.find(item => item.id === id);
-
-    if (!template) return;
-
-
-    /*
-        Sengaja TIDAK memasukkan:
-        - harga
-        - ketersediaan
-    */
-
-    const message =
-        `Halo Ezmoire, saya tertarik dengan template "${template.title}" (${template.code}). Apakah saya bisa memesan template ini?`;
-
-
-    const url =
-        `https://wa.me/${WHATSAPP}?text=${
-            encodeURIComponent(message)
-        }`;
-
-
-    window.open(url, "_blank");
-
-}
-
-
-/* =========================================
-   ADMIN LOGIN
-========================================= */
-
-function openLogin() {
-
-    document
-        .getElementById("loginModal")
-        .classList.add("show");
-
-    document
-        .getElementById("adminPassword")
-        .value = "";
-
-    document
-        .getElementById("loginError")
-        .textContent = "";
-
-}
-
-
-function loginAdmin() {
+/* =====================================================
+   LOGIN
+===================================================== */
+
+function login() {
 
     const password =
         document.getElementById(
@@ -413,11 +126,15 @@ function loginAdmin() {
         ).value;
 
 
-    if (password !== ADMIN_PASSWORD) {
-
+    const error =
         document.getElementById(
             "loginError"
-        ).textContent =
+        );
+
+
+    if (password !== ADMIN_PASSWORD) {
+
+        error.textContent =
             "Password salah.";
 
         return;
@@ -425,65 +142,237 @@ function loginAdmin() {
     }
 
 
-    closeModal("loginModal");
+    sessionStorage.setItem(
+        "ezmoireAdmin",
+        "true"
+    );
 
-    document
-        .getElementById("adminModal")
-        .classList.add("show");
 
-    renderAdminList();
-
-    updateAdminStats();
+    showDashboard();
 
 }
 
 
-/* ENTER LOGIN */
+function showDashboard() {
 
-document
-    .getElementById("adminPassword")
-    .addEventListener("keydown", event => {
+    document
+        .getElementById("loginScreen")
+        .classList.add("hidden");
 
-        if (event.key === "Enter") {
 
-            loginAdmin();
+    document
+        .getElementById("adminDashboard")
+        .classList.remove("hidden");
+
+
+    loadTemplates();
+
+    renderAdminList();
+
+    updateStats();
+
+}
+
+
+/* =====================================================
+   IMAGE TO DATA URL
+===================================================== */
+
+function imageToDataURL(file) {
+
+    return new Promise(
+        (resolve, reject) => {
+
+            const reader =
+                new FileReader();
+
+
+            reader.onload = () => {
+
+                resolve(
+                    reader.result
+                );
+
+            };
+
+
+            reader.onerror = () => {
+
+                reject(
+                    new Error(
+                        "Gagal membaca gambar."
+                    )
+                );
+
+            };
+
+
+            reader.readAsDataURL(file);
 
         }
+    );
 
-    });
+}
 
 
-/* =========================================
+/* =====================================================
+   IMAGE PREVIEW
+===================================================== */
+
+function setupImageUpload() {
+
+    const input =
+        document.getElementById(
+            "templateImage"
+        );
+
+
+    const preview =
+        document.getElementById(
+            "imagePreview"
+        );
+
+
+    input.addEventListener(
+        "change",
+        () => {
+
+            const file =
+                input.files[0];
+
+
+            preview.innerHTML = "";
+
+            preview.classList.remove(
+                "show"
+            );
+
+
+            if (!file) return;
+
+
+            const allowed = [
+                "image/jpeg",
+                "image/png",
+                "image/webp"
+            ];
+
+
+            if (
+                !allowed.includes(
+                    file.type
+                )
+            ) {
+
+                alert(
+                    "Gunakan JPG, PNG, atau WEBP."
+                );
+
+                input.value = "";
+
+                return;
+
+            }
+
+
+            if (
+                file.size >
+                5 * 1024 * 1024
+            ) {
+
+                alert(
+                    "Ukuran gambar maksimal 5 MB."
+                );
+
+                input.value = "";
+
+                return;
+
+            }
+
+
+            const reader =
+                new FileReader();
+
+
+            reader.onload =
+                event => {
+
+                    preview.innerHTML = `
+
+                        <img
+                            src="${event.target.result}"
+                            alt="Preview"
+                        >
+
+                    `;
+
+
+                    preview.classList.add(
+                        "show"
+                    );
+
+                };
+
+
+            reader.readAsDataURL(file);
+
+        }
+    );
+
+}
+
+
+/* =====================================================
    ADD TEMPLATE
-========================================= */
+===================================================== */
 
-function addTemplate() {
+async function addTemplate() {
 
     const title =
         document
-            .getElementById("templateTitle")
-            .value.trim();
+            .getElementById(
+                "templateTitle"
+            )
+            .value
+            .trim();
+
 
     const price =
         document
-            .getElementById("templatePrice")
+            .getElementById(
+                "templatePrice"
+            )
             .value;
+
 
     const link =
         document
-            .getElementById("templateLink")
-            .value.trim();
-
-    const image =
-        document
-            .getElementById("templateImage")
-            .value.trim();
+            .getElementById(
+                "templateLink"
+            )
+            .value
+            .trim();
 
 
-    if (!title || !price || !image) {
+    const imageInput =
+        document.getElementById(
+            "templateImage"
+        );
+
+
+    const imageFile =
+        imageInput.files[0];
+
+
+    if (
+        !title ||
+        !price ||
+        !imageFile
+    ) {
 
         alert(
-            "Judul, harga, dan cover image wajib diisi."
+            "Cover, judul, dan harga wajib diisi."
         );
 
         return;
@@ -492,24 +381,36 @@ function addTemplate() {
 
 
     const categories =
-        [...document.querySelectorAll(
-            ".category-check:checked"
-        )]
-        .map(item => item.value);
+        [
+            ...document.querySelectorAll(
+                ".category-check:checked"
+            )
+        ]
+        .map(
+            input => input.value
+        );
 
 
     const audience =
-        [...document.querySelectorAll(
-            ".audience-check:checked"
-        )]
-        .map(item => item.value);
+        [
+            ...document.querySelectorAll(
+                ".audience-check:checked"
+            )
+        ]
+        .map(
+            input => input.value
+        );
 
 
     const features =
-        [...document.querySelectorAll(
-            ".feature-check:checked"
-        )]
-        .map(item => item.value);
+        [
+            ...document.querySelectorAll(
+                ".feature-check:checked"
+            )
+        ]
+        .map(
+            input => input.value
+        );
 
 
     if (!categories.length) {
@@ -534,257 +435,100 @@ function addTemplate() {
     }
 
 
-    const template = {
-
-        id: Date.now().toString(),
-
-        code: generateCode(),
-
-        title: title,
-
-        price: Number(price),
-
-        image: image,
-
-        link: link,
-
-        categories: categories,
-
-        audience: audience,
-
-        features: features
-
-    };
+    const button =
+        document.getElementById(
+            "addTemplateBtn"
+        );
 
 
-    templates.push(template);
+    button.disabled = true;
 
-    saveTemplates();
-
-    clearForm();
-
-    renderTemplates();
-
-    renderAdminList();
-
-    updateAdminStats();
+    button.innerHTML =
+        "Saving...";
 
 
-    alert(
-        `${template.code} berhasil ditambahkan.`
-    );
+    try {
 
-}
-
-
-/* =========================================
-   CODE GENERATOR
-========================================= */
-
-function generateCode() {
-
-    let max = 0;
-
-
-    templates.forEach(template => {
-
-        const number =
-            parseInt(
-                String(template.code)
-                    .replace("EZ", "")
+        const image =
+            await imageToDataURL(
+                imageFile
             );
 
-        if (
-            !isNaN(number) &&
-            number > max
-        ) {
 
-            max = number;
+        const template = {
 
-        }
+            id:
+                Date.now().toString(),
 
-    });
+            code:
+                generateCode(),
+
+            title:
+                title,
+
+            price:
+                Number(price),
+
+            image:
+                image,
+
+            link:
+                link,
+
+            categories:
+                categories,
+
+            audience:
+                audience,
+
+            features:
+                features,
+
+            createdAt:
+                new Date().toISOString()
+
+        };
 
 
-    return "EZ" +
-        String(max + 1)
-            .padStart(3, "0");
-
-}
-
-
-/* =========================================
-   ADMIN LIST
-========================================= */
-
-function renderAdminList() {
-
-    const container =
-        document.getElementById(
-            "adminTemplateList"
+        templates.push(
+            template
         );
 
 
-    if (!container) return;
+        saveTemplates();
+
+        clearForm();
+
+        renderAdminList();
+
+        updateStats();
 
 
-    container.innerHTML = "";
+        alert(
+            `${template.code} berhasil ditambahkan.`
+        );
 
 
-    if (!templates.length) {
+    } catch {
 
-        container.innerHTML = `
-            <div class="empty-state"
-                 style="display:block;padding:35px 10px">
-
-                <div class="empty-symbol">
-                    +
-                </div>
-
-                <h3>
-                    No templates yet
-                </h3>
-
-                <p>
-                    Tambahkan template pertama.
-                </p>
-
-            </div>
-        `;
-
-        return;
+        alert(
+            "Gagal menyimpan gambar."
+        );
 
     }
 
 
-    [...templates]
-        .reverse()
-        .forEach(template => {
+    button.disabled = false;
 
-            const item =
-                document.createElement("div");
-
-            item.className =
-                "admin-template-item";
-
-
-            item.innerHTML = `
-
-                <img
-                    class="admin-thumb"
-                    src="${safe(template.image)}"
-                    alt=""
-                    onerror="
-                        this.src='https://placehold.co/100x120/15181e/ffffff?text=E'
-                    "
-                >
-
-                <div class="admin-template-info">
-
-                    <strong>
-                        ${safe(template.title)}
-                    </strong>
-
-                    <span>
-                        ${template.code}
-                        ·
-                        ${rupiah(template.price)}
-                    </span>
-
-                </div>
-
-                <button
-                    class="delete-template"
-                    onclick="deleteTemplate('${template.id}')"
-                >
-                    Delete
-                </button>
-            `;
-
-
-            container.appendChild(item);
-
-        });
+    button.innerHTML =
+        "Add Template <span>+</span>";
 
 }
 
 
-/* =========================================
-   DELETE
-========================================= */
-
-function deleteTemplate(id) {
-
-    const template =
-        templates.find(item => item.id === id);
-
-    if (!template) return;
-
-
-    const yes =
-        confirm(
-            `Hapus "${template.title}"?`
-        );
-
-
-    if (!yes) return;
-
-
-    templates =
-        templates.filter(
-            item => item.id !== id
-        );
-
-
-    saveTemplates();
-
-    renderTemplates();
-
-    renderAdminList();
-
-    updateAdminStats();
-
-}
-
-
-/* =========================================
-   ADMIN STATS
-========================================= */
-
-function updateAdminStats() {
-
-    const count =
-        document.getElementById(
-            "templateCount"
-        );
-
-    const next =
-        document.getElementById(
-            "nextCode"
-        );
-
-
-    if (count) {
-
-        count.textContent =
-            templates.length;
-
-    }
-
-
-    if (next) {
-
-        next.textContent =
-            generateCode();
-
-    }
-
-}
-
-
-/* =========================================
+/* =====================================================
    CLEAR FORM
-========================================= */
+===================================================== */
 
 function clearForm() {
 
@@ -792,13 +536,16 @@ function clearForm() {
         "templateTitle"
     ).value = "";
 
+
     document.getElementById(
         "templatePrice"
     ).value = "";
 
+
     document.getElementById(
         "templateLink"
     ).value = "";
+
 
     document.getElementById(
         "templateImage"
@@ -815,101 +562,148 @@ function clearForm() {
 
         });
 
-}
+
+    const preview =
+        document.getElementById(
+            "imagePreview"
+        );
 
 
-/* =========================================
-   SAVE
-========================================= */
+    preview.innerHTML = "";
 
-function saveTemplates() {
-
-    localStorage.setItem(
-        "ezmoireTemplates",
-        JSON.stringify(templates)
+    preview.classList.remove(
+        "show"
     );
 
 }
 
 
-/* =========================================
-   RUPIAH
-========================================= */
+/* =====================================================
+   RENDER ADMIN LIST
+===================================================== */
 
-function rupiah(value) {
+function renderAdminList() {
 
-    return new Intl.NumberFormat(
-        "id-ID",
-        {
-            style: "currency",
-            currency: "IDR",
-            maximumFractionDigits: 0
-        }
-    ).format(value);
-
-}
+    const container =
+        document.getElementById(
+            "adminTemplateList"
+        );
 
 
-/* =========================================
-   SAFE TEXT
-========================================= */
-
-function safe(value) {
-
-    const element =
-        document.createElement("div");
-
-    element.textContent =
-        value ?? "";
-
-    return element.innerHTML;
-
-}
+    container.innerHTML = "";
 
 
-/* =========================================
-   MODAL
-========================================= */
+    if (!templates.length) {
 
-function closeModal(id) {
+        container.innerHTML = `
 
-    document
-        .getElementById(id)
-        .classList.remove("show");
+            <div class="empty-state"
+                 style="display:block;padding:45px 10px">
 
-}
+                <div class="empty-symbol">
+                    +
+                </div>
+
+                <h3>
+                    Belum ada template
+                </h3>
+
+                <p>
+                    Tambahkan template pertama kamu.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
 
 
-function closeAdmin() {
+    [
+        ...templates
+    ]
+        .reverse()
+        .forEach(template => {
 
-    document
-        .getElementById("adminModal")
-        .classList.remove("show");
+            const item =
+                document.createElement(
+                    "div"
+                );
 
-}
+
+            item.className =
+                "admin-template-item";
 
 
-function setupModalClose() {
+            const tags =
+                (template.categories || [])
+                    .slice(0, 3)
+                    .map(category => `
+                        <span>
+                            ${safe(category)}
+                        </span>
+                    `)
+                    .join("");
 
-    document
-        .querySelectorAll(".modal")
-        .forEach(modal => {
 
-            modal.addEventListener(
-                "click",
-                event => {
+            item.innerHTML = `
 
-                    if (
-                        event.target === modal
-                    ) {
+                <img
+                    class="admin-thumb"
+                    src="${safe(template.image)}"
+                    alt=""
+                    onerror="
+                        this.src='https://placehold.co/100x120/15181e/ffffff?text=E'
+                    "
+                >
 
-                        modal.classList.remove(
-                            "show"
-                        );
 
-                    }
+                <div class="admin-template-info">
 
-                }
+                    <strong>
+                        ${safe(template.title)}
+                    </strong>
+
+                    <span>
+                        ${safe(template.code)}
+                        ·
+                        ${rupiah(template.price)}
+                    </span>
+
+
+                    <div class="admin-template-tags">
+                        ${tags}
+                    </div>
+
+                </div>
+
+
+                <div class="admin-item-actions">
+
+                    <button
+                        type="button"
+                        onclick="previewTemplate('${template.id}')"
+                    >
+                        Preview
+                    </button>
+
+                    <button
+                        type="button"
+                        class="delete"
+                        onclick="deleteTemplate('${template.id}')"
+                    >
+                        Delete
+                    </button>
+
+                </div>
+
+            `;
+
+
+            container.appendChild(
+                item
             );
 
         });
@@ -917,19 +711,313 @@ function setupModalClose() {
 }
 
 
-/* =========================================
-   FOCUS ADD FORM
-========================================= */
+/* =====================================================
+   PREVIEW
+===================================================== */
 
-function focusAddForm() {
+function previewTemplate(id) {
 
-    const form =
-        document.getElementById("addForm");
+    const template =
+        templates.find(
+            item => item.id === id
+        );
 
-    if (!form) return;
 
-    form.scrollIntoView({
-        behavior: "smooth"
+    if (!template) return;
+
+
+    if (!template.link) {
+
+        alert(
+            "Template ini belum memiliki link preview."
+        );
+
+        return;
+
+    }
+
+
+    window.open(
+        template.link,
+        "_blank"
+    );
+
+}
+
+
+/* =====================================================
+   DELETE
+===================================================== */
+
+function deleteTemplate(id) {
+
+    const template =
+        templates.find(
+            item => item.id === id
+        );
+
+
+    if (!template) return;
+
+
+    const confirmDelete =
+        confirm(
+            `Hapus template "${template.title}"?`
+        );
+
+
+    if (!confirmDelete) return;
+
+
+    templates =
+        templates.filter(
+            item => item.id !== id
+        );
+
+
+    saveTemplates();
+
+    renderAdminList();
+
+    updateStats();
+
+}
+
+
+/* =====================================================
+   STATS
+===================================================== */
+
+function updateStats() {
+
+    document.getElementById(
+        "templateCount"
+    ).textContent =
+        templates.length;
+
+
+    document.getElementById(
+        "nextCode"
+    ).textContent =
+        generateCode();
+
+}
+
+
+/* =====================================================
+   THEME
+===================================================== */
+
+function loadTheme() {
+
+    const theme =
+        localStorage.getItem(
+            "ezmoireTheme"
+        );
+
+
+    if (theme === "dark") {
+
+        document.body.classList.add(
+            "dark"
+        );
+
+    }
+
+
+    updateThemeButton();
+
+}
+
+
+function updateThemeButton() {
+
+    const button =
+        document.getElementById(
+            "adminThemeBtn"
+        );
+
+
+    if (!button) return;
+
+
+    button.textContent =
+        document.body.classList.contains(
+            "dark"
+        )
+            ? "☀"
+            : "☾";
+
+}
+
+
+function toggleTheme() {
+
+    document.body.classList.toggle(
+        "dark"
+    );
+
+
+    localStorage.setItem(
+        "ezmoireTheme",
+
+        document.body.classList.contains(
+            "dark"
+        )
+            ? "dark"
+            : "light"
+    );
+
+
+    updateThemeButton();
+
+}
+
+
+/* =====================================================
+   SIDEBAR
+===================================================== */
+
+function setupSidebar() {
+
+    const buttons =
+        document.querySelectorAll(
+            ".sidebar-item[data-section]"
+        );
+
+
+    buttons.forEach(button => {
+
+        button.addEventListener(
+            "click",
+            () => {
+
+                buttons.forEach(
+                    item =>
+                        item.classList.remove(
+                            "active"
+                        )
+                );
+
+
+                button.classList.add(
+                    "active"
+                );
+
+
+                const section =
+                    button.dataset.section;
+
+
+                if (
+                    section === "add"
+                ) {
+
+                    document
+                        .getElementById(
+                            "addSection"
+                        )
+                        .scrollIntoView({
+                            behavior: "smooth"
+                        });
+
+                }
+
+
+                if (
+                    section === "templates"
+                ) {
+
+                    document
+                        .getElementById(
+                            "templatesSection"
+                        )
+                        .scrollIntoView({
+                            behavior: "smooth"
+                        });
+
+                }
+
+            }
+        );
+
     });
 
 }
+
+
+/* =====================================================
+   INIT
+===================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        loadTheme();
+
+        const loggedIn =
+            sessionStorage.getItem(
+                "ezmoireAdmin"
+            );
+
+
+        if (loggedIn === "true") {
+
+            showDashboard();
+
+        }
+
+
+        document
+            .getElementById("loginBtn")
+            .addEventListener(
+                "click",
+                login
+            );
+
+
+        document
+            .getElementById("adminPassword")
+            .addEventListener(
+                "keydown",
+                event => {
+
+                    if (
+                        event.key === "Enter"
+                    ) {
+
+                        login();
+
+                    }
+
+                }
+            );
+
+
+        document
+            .getElementById(
+                "addTemplateBtn"
+            )
+            .addEventListener(
+                "click",
+                addTemplate
+            );
+
+
+        document
+            .getElementById(
+                "adminThemeBtn"
+            )
+            .addEventListener(
+                "click",
+                toggleTheme
+            );
+
+
+        setupImageUpload();
+
+        setupSidebar();
+
+    }
+);
