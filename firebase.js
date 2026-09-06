@@ -71,16 +71,21 @@ console.log("Firebase berhasil terhubung!");
    FIREBASE CONFIGURATION
 ===================================================== */
 
+/* =====================================================
+   EZMOIRE
+   FIREBASE CONFIGURATION
+===================================================== */
+
 import {
     initializeApp
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 
 import {
     getAuth,
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
 import {
     getFirestore,
@@ -89,7 +94,7 @@ import {
     doc,
     setDoc,
     deleteDoc
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 import {
     getStorage,
@@ -97,7 +102,7 @@ import {
     uploadBytes,
     getDownloadURL,
     deleteObject
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-storage.js";
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-storage.js";
 
 
 /* =====================================================
@@ -105,113 +110,83 @@ import {
 ===================================================== */
 
 const firebaseConfig = {
-
-  apiKey: "AIzaSyBIDirFgyFwAtI8uMSOsFrxzTtV98hQ5r8",
-  authDomain: "ezmoire.firebaseapp.com",
-  projectId: "ezmoire",
-  storageBucket: "ezmoire.firebasestorage.app",
-  messagingSenderId: "101033230324",
-  appId: "1:101033230324:web:648af3db45d65c5de3c3a1"
+    apiKey: "AIzaSyBIDirFgyFwAtI8uMSOsFrxzTtV98hQ5r8",
+    authDomain: "ezmoire.firebaseapp.com",
+    projectId: "ezmoire",
+    storageBucket: "ezmoire.firebasestorage.app",
+    messagingSenderId: "101033230324",
+    appId: "1:101033230324:web:648af3db45d65c5de3c3a1"
 };
 
 
 /* =====================================================
-   INITIALIZE FIREBASE
+   INITIALIZE
 ===================================================== */
 
-const app =
-    initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
 
 /* =====================================================
    SERVICES
 ===================================================== */
 
-const auth =
-    getAuth(app);
-
-const db =
-    getFirestore(app);
-
-const storage =
-    getStorage(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
 
 /* =====================================================
-   EXPOSE TO script.js
+   GLOBAL FIREBASE SERVICES
 ===================================================== */
 
-window.firebaseApp =
-    app;
-
-window.firebaseAuth =
-    auth;
-
-window.firebaseDB =
-    db;
-
-window.firebaseStorage =
-    storage;
+window.firebaseApp = app;
+window.firebaseAuth = auth;
+window.firebaseDB = db;
+window.firebaseStorage = storage;
 
 
 /* =====================================================
    AUTH
 ===================================================== */
 
-window.firebaseSignIn =
-    signInWithEmailAndPassword;
-
-window.firebaseSignOut =
-    signOut;
-
-window.firebaseOnAuthStateChanged =
-    onAuthStateChanged;
+window.firebaseSignIn = signInWithEmailAndPassword;
+window.firebaseSignOut = signOut;
+window.firebaseOnAuthStateChanged = onAuthStateChanged;
 
 
 /* =====================================================
    FIRESTORE
 ===================================================== */
 
-window.firebaseCollection =
-    collection;
-
-window.firebaseGetDocs =
-    getDocs;
-
-window.firebaseDoc =
-    doc;
-
-window.firebaseSetDoc =
-    setDoc;
-
-window.firebaseDeleteDoc =
-    deleteDoc;
+window.firebaseCollection = collection;
+window.firebaseGetDocs = getDocs;
+window.firebaseDoc = doc;
+window.firebaseSetDoc = setDoc;
+window.firebaseDeleteDoc = deleteDoc;
 
 
 /* =====================================================
    STORAGE
 ===================================================== */
 
-window.firebaseStorageRef =
-    ref;
-
-window.firebaseUploadBytes =
-    uploadBytes;
-
-window.firebaseGetDownloadURL =
-    getDownloadURL;
-
-window.firebaseDeleteObject =
-    deleteObject;
+window.firebaseStorageRef = ref;
+window.firebaseUploadBytes = uploadBytes;
+window.firebaseGetDownloadURL = getDownloadURL;
+window.firebaseDeleteObject = deleteObject;
 
 
 /* =====================================================
-   READY FLAG
+   FIREBASE READY
 ===================================================== */
 
-window.firebaseReady =
-    true;
+window.ezmoireFirebaseReady = true;
 
-console.log(
-    "Ezmoire Firebase berhasil terhubung."
-);
+
+/* =====================================================
+   LOG
+===================================================== */
+
+console.log("Ezmoire Firebase berhasil terhubung.");
+console.log("Firestore:", db);
+console.log("Storage:", storage);
+console.log("Auth:", auth);
