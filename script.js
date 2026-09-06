@@ -1,7 +1,8 @@
 /* =====================================================
    EZMOIRE
    SINGLE SCRIPT
-   PUBLIC + ADMIN
+   PUBLIC + ADMIN + FIREBASE
+   FINAL
 ===================================================== */
 
 
@@ -23,29 +24,21 @@ const ADMIN_PLACEHOLDER =
 ===================================================== */
 
 let templates = [];
-
 let currentCategory = "all";
 let currentAudience = "all";
-
 let currentUser = null;
 
 
 /* =====================================================
-   RUPIAH
+   FORMAT RUPIAH
 ===================================================== */
 
 function rupiah(value) {
-
-    return new Intl.NumberFormat(
-        "id-ID",
-        {
-            style: "currency",
-            currency: "IDR",
-            maximumFractionDigits: 0
-        }
-    ).format(
-        Number(value) || 0
-    );
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0
+    }).format(Number(value) || 0);
 }
 
 
@@ -54,12 +47,9 @@ function rupiah(value) {
 ===================================================== */
 
 function safe(value) {
+    const div = document.createElement("div");
 
-    const div =
-        document.createElement("div");
-
-    div.textContent =
-        value ?? "";
+    div.textContent = value ?? "";
 
     return div.innerHTML;
 }
@@ -70,18 +60,11 @@ function safe(value) {
 ===================================================== */
 
 function isAdminPage() {
-
-    return !!document.getElementById(
-        "adminDashboard"
-    );
+    return !!document.getElementById("adminDashboard");
 }
 
-
 function isPublicPage() {
-
-    return !!document.getElementById(
-        "templateGrid"
-    );
+    return !!document.getElementById("templateGrid");
 }
 
 
@@ -89,10 +72,9 @@ function isPublicPage() {
    FIREBASE CHECK
 ===================================================== */
 
-function isFirebaseReady() {
-
-    return !!(
-        window.ezmoireFirebaseReady &&
+function firebaseIsReady() {
+    return (
+        window.firebaseReady === true &&
         window.firebaseDB &&
         window.firebaseCollection &&
         window.firebaseGetDocs
@@ -101,109 +83,105 @@ function isFirebaseReady() {
 
 
 /* =====================================================
+   WAIT FOR FIREBASE
+===================================================== */
+
+function waitForFirebase(timeout = 10000) {
+    return new Promise((resolve, reject) => {
+        if (firebaseIsReady()) {
+            resolve();
+            return;
+        }
+
+        const start = Date.now();
+
+        const timer = setInterval(() => {
+            if (firebaseIsReady()) {
+                clearInterval(timer);
+                resolve();
+                return;
+            }
+
+            if (Date.now() - start >= timeout) {
+                clearInterval(timer);
+
+                reject(
+                    new Error(
+                        "Firebase tidak siap dalam waktu yang ditentukan."
+                    )
+                );
+            }
+        }, 50);
+    });
+}
+
+
+/* =====================================================
    LOAD TEMPLATES
 ===================================================== */
 
 async function loadTemplates() {
-
-    if (!isFirebaseReady()) {
-
-        console.error(
-            "Firebase belum siap."
-        );
-
-        return;
-
-    }
-
-
     try {
+        await waitForFirebase();
+
+        const templatesRef =
+            window.firebaseCollection(
+                window.firebaseDB,
+                "templates"
+            );
 
         const snapshot =
             await window.firebaseGetDocs(
-                window.firebaseCollection(
-                    window.firebaseDB,
-                    "templates"
-                )
+                templatesRef
             );
-
 
         templates = [];
 
+        snapshot.forEach(docSnapshot => {
+            const data = docSnapshot.data();
 
-        snapshot.forEach(
-            docSnapshot => {
+            templates.push({
+                id: docSnapshot.id,
 
-                const data =
-                    docSnapshot.data();
+                ...data,
 
+                categories:
+                    Array.isArray(data.categories)
+                        ? data.categories
+                        : [],
 
-                templates.push({
+                audience:
+                    Array.isArray(data.audience)
+                        ? data.audience
+                        : [],
 
-                    id:
-                        docSnapshot.id,
-
-                    ...data,
-
-                    categories:
-                        Array.isArray(
-                            data.categories
-                        )
-                            ? data.categories
-                            : [],
-
-                    audience:
-                        Array.isArray(
-                            data.audience
-                        )
-                            ? data.audience
-                            : [],
-
-                    features:
-                        Array.isArray(
-                            data.features
-                        )
-                            ? data.features
-                            : []
-
-                });
-
-            }
-        );
-
+                features:
+                    Array.isArray(data.features)
+                        ? data.features
+                        : []
+            });
+        });
 
         console.log(
-            "Template dari Firebase:",
-            templates
+            `Berhasil memuat ${templates.length} template.`
         );
 
-
         if (isPublicPage()) {
-
             renderTemplates();
-
         }
-
 
         if (isAdminPage()) {
-
             renderAdminList();
-
             updateStats();
-
         }
 
-
     } catch (error) {
-
         console.error(
             "Gagal mengambil template dari Firebase:",
             error
         );
 
-
         if (isPublicPage()) {
-
             const grid =
                 document.getElementById(
                     "templateGrid"
@@ -214,9 +192,7 @@ async function loadTemplates() {
                     "emptyState"
                 );
 
-
             if (grid) {
-
                 grid.innerHTML = `
                     <div
                         style="
@@ -225,7 +201,6 @@ async function loadTemplates() {
                             padding:50px 20px;
                         "
                     >
-
                         <h3>
                             Template gagal dimuat
                         </h3>
@@ -233,24 +208,15 @@ async function loadTemplates() {
                         <p>
                             Silakan refresh halaman.
                         </p>
-
                     </div>
                 `;
-
             }
-
 
             if (empty) {
-
-                empty.style.display =
-                    "none";
-
+                empty.style.display = "none";
             }
-
         }
-
     }
-
 }
 
 
@@ -259,50 +225,30 @@ async function loadTemplates() {
 ===================================================== */
 
 function generateCode() {
-
     let highest = 0;
 
+    templates.forEach(template => {
+        const code = String(
+            template.code || ""
+        );
 
-    templates.forEach(
-        template => {
+        const number = parseInt(
+            code.replace(/[^0-9]/g, ""),
+            10
+        );
 
-            const code =
-                String(
-                    template.code || ""
-                );
-
-
-            const number =
-                parseInt(
-                    code.replace(
-                        /[^0-9]/g,
-                        ""
-                    ),
-                    10
-                );
-
-
-            if (
-                !isNaN(number) &&
-                number > highest
-            ) {
-
-                highest =
-                    number;
-
-            }
-
+        if (
+            !isNaN(number) &&
+            number > highest
+        ) {
+            highest = number;
         }
-    );
-
+    });
 
     return (
         "EZ" +
-        String(
-            highest + 1
-        ).padStart(3, "0")
+        String(highest + 1).padStart(3, "0")
     );
-
 }
 
 
@@ -311,98 +257,65 @@ function generateCode() {
 ===================================================== */
 
 function loadTheme() {
-
     const saved =
         localStorage.getItem(
             "ezmoireTheme"
         );
 
-
     if (saved === "dark") {
-
-        document.body.classList.add(
-            "dark"
-        );
-
+        document.body.classList.add("dark");
     }
-
 
     updatePublicThemeButton();
     updateAdminThemeButton();
-
 }
 
 
 function updatePublicThemeButton() {
-
     const button =
-        document.getElementById(
-            "themeBtn"
-        );
-
+        document.getElementById("themeBtn");
 
     if (!button) {
         return;
     }
 
-
     button.textContent =
-        document.body.classList.contains(
-            "dark"
-        )
+        document.body.classList.contains("dark")
             ? "☀"
             : "☾";
-
 }
 
 
 function updateAdminThemeButton() {
-
     const button =
         document.getElementById(
             "adminThemeBtn"
         );
 
-
     if (!button) {
         return;
     }
 
-
     button.textContent =
-        document.body.classList.contains(
-            "dark"
-        )
+        document.body.classList.contains("dark")
             ? "☀"
             : "☾";
-
 }
 
 
 function toggleTheme() {
-
-    document.body.classList.toggle(
-        "dark"
-    );
-
+    document.body.classList.toggle("dark");
 
     const isDark =
-        document.body.classList.contains(
-            "dark"
-        );
-
+        document.body.classList.contains("dark");
 
     localStorage.setItem(
         "ezmoireTheme",
-        isDark
-            ? "dark"
-            : "light"
+        isDark ? "dark" : "light"
     );
-
 
     updatePublicThemeButton();
     updateAdminThemeButton();
-
 }
 
 
@@ -413,88 +326,63 @@ function toggleTheme() {
 function setupFilters() {
 
     document
-        .querySelectorAll(
-            ".category-btn"
-        )
-        .forEach(
-            button => {
+        .querySelectorAll(".category-btn")
+        .forEach(button => {
 
-                button.addEventListener(
-                    "click",
-                    () => {
+            button.addEventListener(
+                "click",
+                () => {
 
-                        document
-                            .querySelectorAll(
-                                ".category-btn"
-                            )
-                            .forEach(
-                                item =>
-                                    item.classList.remove(
-                                        "active"
-                                    )
+                    document
+                        .querySelectorAll(
+                            ".category-btn"
+                        )
+                        .forEach(item => {
+                            item.classList.remove(
+                                "active"
                             );
+                        });
 
+                    button.classList.add("active");
 
-                        button.classList.add(
-                            "active"
-                        );
+                    currentCategory =
+                        button.dataset.category ||
+                        "all";
 
-
-                        currentCategory =
-                            button.dataset.category ||
-                            "all";
-
-
-                        renderTemplates();
-
-                    }
-                );
-
-            }
-        );
+                    renderTemplates();
+                }
+            );
+        });
 
 
     document
-        .querySelectorAll(
-            ".who-btn"
-        )
-        .forEach(
-            button => {
+        .querySelectorAll(".who-btn")
+        .forEach(button => {
 
-                button.addEventListener(
-                    "click",
-                    () => {
+            button.addEventListener(
+                "click",
+                () => {
 
-                        document
-                            .querySelectorAll(
-                                ".who-btn"
-                            )
-                            .forEach(
-                                item =>
-                                    item.classList.remove(
-                                        "active"
-                                    )
+                    document
+                        .querySelectorAll(
+                            ".who-btn"
+                        )
+                        .forEach(item => {
+                            item.classList.remove(
+                                "active"
                             );
+                        });
 
+                    button.classList.add("active");
 
-                        button.classList.add(
-                            "active"
-                        );
+                    currentAudience =
+                        button.dataset.audience ||
+                        "all";
 
-
-                        currentAudience =
-                            button.dataset.audience ||
-                            "all";
-
-
-                        renderTemplates();
-
-                    }
-                );
-
-            }
-        );
-
+                    renderTemplates();
+                }
+            );
+        });
 }
 
 
@@ -509,100 +397,19 @@ function renderTemplates() {
             "templateGrid"
         );
 
-
     const empty =
         document.getElementById(
             "emptyState"
         );
 
-
     if (!grid) {
         return;
     }
 
-
     grid.innerHTML = "";
 
-
     const result =
-        templates.filter(
-            template => {
-
-                const categories =
-                    Array.isArray(
-                        template.categories
-                    )
-                        ? template.categories
-                        : [];
-
-
-                const audience =
-                    Array.isArray(
-                        template.audience
-                    )
-                        ? template.audience
-                        : [];
-
-
-                const categoryOkay =
-                    currentCategory === "all"
-                        ? true
-                        : categories.includes(
-                            currentCategory
-                        );
-
-
-                const audienceOkay =
-                    currentAudience === "all"
-                        ? true
-                        : audience.includes(
-                            currentAudience
-                        );
-
-
-                return (
-                    categoryOkay &&
-                    audienceOkay
-                );
-
-            }
-        );
-
-
-    if (result.length === 0) {
-
-        if (empty) {
-
-            empty.style.display =
-                "block";
-
-        }
-
-        return;
-
-    }
-
-
-    if (empty) {
-
-        empty.style.display =
-            "none";
-
-    }
-
-
-    result.forEach(
-        template => {
-
-            const card =
-                document.createElement(
-                    "article"
-                );
-
-
-            card.className =
-                "template-card";
-
+        templates.filter(template => {
 
             const categories =
                 Array.isArray(
@@ -611,152 +418,189 @@ function renderTemplates() {
                     ? template.categories
                     : [];
 
-
-            const tags =
-                categories
-                    .slice(0, 3)
-                    .map(
-                        category => `
-                            <span class="template-tag">
-                                ${safe(category)}
-                            </span>
-                        `
-                    )
-                    .join("");
+            const audience =
+                Array.isArray(
+                    template.audience
+                )
+                    ? template.audience
+                    : [];
 
 
-            const image =
-                template.image ||
-                PLACEHOLDER;
+            const categoryOkay =
+                currentCategory === "all"
+                    ? true
+                    : categories.includes(
+                        currentCategory
+                    );
 
 
-            card.innerHTML = `
-
-                <div class="template-cover">
-
-                    <img
-                        src="${safe(image)}"
-                        alt="${safe(template.title)}"
-                    >
-
-                    <span class="template-code">
-                        ${safe(template.code)}
-                    </span>
-
-                </div>
+            const audienceOkay =
+                currentAudience === "all"
+                    ? true
+                    : audience.includes(
+                        currentAudience
+                    );
 
 
-                <div class="template-info">
-
-                    <h3>
-                        ${safe(template.title)}
-                    </h3>
-
-
-                    <div class="template-price">
-                        ${rupiah(template.price)}
-                    </div>
+            return (
+                categoryOkay &&
+                audienceOkay
+            );
+        });
 
 
-                    <div class="template-tags">
-                        ${tags}
-                    </div>
+    if (result.length === 0) {
+
+        if (empty) {
+            empty.style.display = "block";
+        }
+
+        return;
+    }
 
 
-                    <div class="template-buttons">
-
-                        <button
-                            class="detail-btn"
-                            type="button"
-                        >
-                            Detail
-                        </button>
+    if (empty) {
+        empty.style.display = "none";
+    }
 
 
-                        <button
-                            class="order-btn"
-                            type="button"
-                        >
-                            Pesan
-                        </button>
+    result.forEach(template => {
 
-                    </div>
-
-                </div>
-
-            `;
-
-
-            const imageElement =
-                card.querySelector(
-                    "img"
-                );
-
-
-            if (imageElement) {
-
-                imageElement.onerror =
-                    () => {
-
-                        imageElement.src =
-                            PLACEHOLDER;
-
-                    };
-
-            }
-
-
-            const detailButton =
-                card.querySelector(
-                    ".detail-btn"
-                );
-
-
-            if (detailButton) {
-
-                detailButton.addEventListener(
-                    "click",
-                    () => {
-
-                        openTemplate(
-                            template.id
-                        );
-
-                    }
-                );
-
-            }
-
-
-            const orderButton =
-                card.querySelector(
-                    ".order-btn"
-                );
-
-
-            if (orderButton) {
-
-                orderButton.addEventListener(
-                    "click",
-                    () => {
-
-                        orderTemplate(
-                            template.id
-                        );
-
-                    }
-                );
-
-            }
-
-
-            grid.appendChild(
-                card
+        const card =
+            document.createElement(
+                "article"
             );
 
-        }
-    );
+        card.className =
+            "template-card";
 
+
+        const categories =
+            Array.isArray(
+                template.categories
+            )
+                ? template.categories
+                : [];
+
+
+        const tags =
+            categories
+                .slice(0, 3)
+                .map(category => `
+                    <span class="template-tag">
+                        ${safe(category)}
+                    </span>
+                `)
+                .join("");
+
+
+        const image =
+            template.image ||
+            PLACEHOLDER;
+
+
+        card.innerHTML = `
+            <div class="template-cover">
+
+                <img
+                    src="${safe(image)}"
+                    alt="${safe(template.title)}"
+                >
+
+                <span class="template-code">
+                    ${safe(template.code)}
+                </span>
+
+            </div>
+
+
+            <div class="template-info">
+
+                <h3>
+                    ${safe(template.title)}
+                </h3>
+
+
+                <div class="template-price">
+                    ${rupiah(template.price)}
+                </div>
+
+
+                <div class="template-tags">
+                    ${tags}
+                </div>
+
+
+                <div class="template-buttons">
+
+                    <button
+                        class="detail-btn"
+                        type="button"
+                    >
+                        Detail
+                    </button>
+
+
+                    <button
+                        class="order-btn"
+                        type="button"
+                    >
+                        Pesan
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+
+        const imageElement =
+            card.querySelector("img");
+
+        if (imageElement) {
+            imageElement.onerror = () => {
+                imageElement.src =
+                    PLACEHOLDER;
+            };
+        }
+
+
+        const detailButton =
+            card.querySelector(
+                ".detail-btn"
+            );
+
+        if (detailButton) {
+            detailButton.addEventListener(
+                "click",
+                () => {
+                    openTemplate(
+                        template.id
+                    );
+                }
+            );
+        }
+
+
+        const orderButton =
+            card.querySelector(
+                ".order-btn"
+            );
+
+        if (orderButton) {
+            orderButton.addEventListener(
+                "click",
+                () => {
+                    orderTemplate(
+                        template.id
+                    );
+                }
+            );
+        }
+
+
+        grid.appendChild(card);
+    });
 }
 
 
@@ -773,7 +617,6 @@ function openTemplate(id) {
                 String(id)
         );
 
-
     if (!template) {
         return;
     }
@@ -783,7 +626,6 @@ function openTemplate(id) {
         document.getElementById(
             "detailModal"
         );
-
 
     if (!modal) {
         return;
@@ -795,48 +637,40 @@ function openTemplate(id) {
             "detailImage"
         );
 
-
     const code =
         document.getElementById(
             "detailCode"
         );
-
 
     const title =
         document.getElementById(
             "detailTitle"
         );
 
-
     const price =
         document.getElementById(
             "detailPrice"
         );
-
 
     const categories =
         document.getElementById(
             "detailCategories"
         );
 
-
     const audience =
         document.getElementById(
             "detailAudience"
         );
-
 
     const features =
         document.getElementById(
             "detailFeatures"
         );
 
-
     const preview =
         document.getElementById(
             "previewBtn"
         );
-
 
     const whatsapp =
         document.getElementById(
@@ -855,40 +689,28 @@ function openTemplate(id) {
         image.alt =
             template.title || "";
 
-        image.onerror =
-            () => {
-
-                image.src =
-                    PLACEHOLDER;
-
-            };
-
+        image.onerror = () => {
+            image.src =
+                PLACEHOLDER;
+        };
     }
 
 
-    /* BASIC */
+    /* BASIC INFO */
 
     if (code) {
-
         code.textContent =
             template.code || "";
-
     }
-
 
     if (title) {
-
         title.textContent =
             template.title || "";
-
     }
 
-
     if (price) {
-
         price.textContent =
             rupiah(template.price);
-
     }
 
 
@@ -896,23 +718,21 @@ function openTemplate(id) {
 
     if (categories) {
 
-        categories.innerHTML =
-            (
-                Array.isArray(
-                    template.categories
-                )
-                    ? template.categories
-                    : []
+        const list =
+            Array.isArray(
+                template.categories
             )
-            .map(
-                item => `
+                ? template.categories
+                : [];
+
+        categories.innerHTML =
+            list
+                .map(item => `
                     <span>
                         ${safe(item)}
                     </span>
-                `
-            )
-            .join("");
-
+                `)
+                .join("");
     }
 
 
@@ -920,23 +740,21 @@ function openTemplate(id) {
 
     if (audience) {
 
-        audience.innerHTML =
-            (
-                Array.isArray(
-                    template.audience
-                )
-                    ? template.audience
-                    : []
+        const list =
+            Array.isArray(
+                template.audience
             )
-            .map(
-                item => `
+                ? template.audience
+                : [];
+
+        audience.innerHTML =
+            list
+                .map(item => `
                     <span>
                         ${safe(item)}
                     </span>
-                `
-            )
-            .join("");
-
+                `)
+                .join("");
     }
 
 
@@ -954,19 +772,18 @@ function openTemplate(id) {
 
         features.innerHTML =
             featureList.length
-                ?
-                featureList
-                    .map(
-                        item => `
-                            <div>
-                                ${safe(item)}
-                            </div>
-                        `
-                    )
+                ? featureList
+                    .map(item => `
+                        <div>
+                            ${safe(item)}
+                        </div>
+                    `)
                     .join("")
-                :
-                "<div>Belum ada fitur khusus.</div>";
-
+                : `
+                    <div>
+                        Belum ada fitur khusus.
+                    </div>
+                `;
     }
 
 
@@ -975,7 +792,6 @@ function openTemplate(id) {
     if (preview) {
 
         preview.onclick = null;
-
 
         if (template.link) {
 
@@ -990,9 +806,7 @@ function openTemplate(id) {
 
         } else {
 
-            preview.href =
-                "#";
-
+            preview.href = "#";
 
             preview.onclick =
                 event => {
@@ -1002,11 +816,8 @@ function openTemplate(id) {
                     alert(
                         "Preview website belum ditambahkan."
                     );
-
                 };
-
         }
-
     }
 
 
@@ -1014,22 +825,15 @@ function openTemplate(id) {
 
     if (whatsapp) {
 
-        whatsapp.onclick =
-            () => {
-
-                orderTemplate(
-                    template.id
-                );
-
-            };
-
+        whatsapp.onclick = () => {
+            orderTemplate(
+                template.id
+            );
+        };
     }
 
 
-    modal.classList.add(
-        "show"
-    );
-
+    modal.classList.add("show");
 }
 
 
@@ -1045,7 +849,6 @@ function orderTemplate(id) {
                 String(item.id) ===
                 String(id)
         );
-
 
     if (!template) {
         return;
@@ -1064,7 +867,6 @@ function orderTemplate(id) {
         url,
         "_blank"
     );
-
 }
 
 
@@ -1079,7 +881,6 @@ function setupModalClose() {
             "detailModal"
         );
 
-
     const close =
         document.getElementById(
             "detailClose"
@@ -1093,16 +894,12 @@ function setupModalClose() {
             () => {
 
                 if (modal) {
-
                     modal.classList.remove(
                         "show"
                     );
-
                 }
-
             }
         );
-
     }
 
 
@@ -1120,12 +917,9 @@ function setupModalClose() {
                     modal.classList.remove(
                         "show"
                     );
-
                 }
-
             }
         );
-
     }
 
 
@@ -1143,14 +937,10 @@ function setupModalClose() {
                     modal.classList.remove(
                         "show"
                     );
-
                 }
-
             }
-
         }
     );
-
 }
 
 
@@ -1165,18 +955,15 @@ async function loginAdmin() {
             "adminEmail"
         );
 
-
     const passwordInput =
         document.getElementById(
             "adminPassword"
         );
 
-
     const error =
         document.getElementById(
             "loginError"
         );
-
 
     const loginButton =
         document.getElementById(
@@ -1188,19 +975,12 @@ async function loginAdmin() {
         !emailInput ||
         !passwordInput
     ) {
-
-        console.error(
-            "Input login tidak ditemukan."
-        );
-
         return;
-
     }
 
 
     const email =
         emailInput.value.trim();
-
 
     const password =
         passwordInput.value;
@@ -1212,52 +992,41 @@ async function loginAdmin() {
     ) {
 
         if (error) {
-
             error.textContent =
                 "Email dan password wajib diisi.";
-
         }
 
         return;
-
-    }
-
-
-    if (
-        !window.firebaseAuth ||
-        !window.firebaseSignIn
-    ) {
-
-        if (error) {
-
-            error.textContent =
-                "Firebase Authentication belum siap.";
-
-        }
-
-        return;
-
     }
 
 
     try {
 
+        await waitForFirebase();
+
+
+        if (
+            !window.firebaseAuth ||
+            !window.firebaseSignIn
+        ) {
+
+            throw new Error(
+                "Firebase Authentication belum siap."
+            );
+        }
+
+
         if (error) {
-
-            error.textContent =
-                "";
-
+            error.textContent = "";
         }
 
 
         if (loginButton) {
 
-            loginButton.disabled =
-                true;
+            loginButton.disabled = true;
 
             loginButton.textContent =
                 "Logging in...";
-
         }
 
 
@@ -1288,9 +1057,7 @@ async function loginAdmin() {
             ) {
 
                 case "auth/invalid-credential":
-
                 case "auth/wrong-password":
-
                 case "auth/user-not-found":
 
                     error.textContent =
@@ -1327,24 +1094,20 @@ async function loginAdmin() {
 
                     error.textContent =
                         "Login gagal. Periksa email dan password.";
-
             }
-
         }
 
+    } finally {
+
+        if (loginButton) {
+
+            loginButton.disabled =
+                false;
+
+            loginButton.textContent =
+                "Login";
+        }
     }
-
-
-    if (loginButton) {
-
-        loginButton.disabled =
-            false;
-
-        loginButton.textContent =
-            "Login";
-
-    }
-
 }
 
 
@@ -1359,7 +1122,6 @@ function showLogin() {
             "loginScreen"
         );
 
-
     const dashboard =
         document.getElementById(
             "adminDashboard"
@@ -1367,22 +1129,17 @@ function showLogin() {
 
 
     if (loginScreen) {
-
         loginScreen.classList.remove(
             "hidden"
         );
-
     }
 
 
     if (dashboard) {
-
         dashboard.classList.add(
             "hidden"
         );
-
     }
-
 }
 
 
@@ -1397,7 +1154,6 @@ async function showDashboard() {
             "loginScreen"
         );
 
-
     const dashboard =
         document.getElementById(
             "adminDashboard"
@@ -1405,25 +1161,20 @@ async function showDashboard() {
 
 
     if (loginScreen) {
-
         loginScreen.classList.add(
             "hidden"
         );
-
     }
 
 
     if (dashboard) {
-
         dashboard.classList.remove(
             "hidden"
         );
-
     }
 
 
     await loadTemplates();
-
 }
 
 
@@ -1431,56 +1182,51 @@ async function showDashboard() {
    AUTH STATE
 ===================================================== */
 
-function setupAuth() {
+async function setupAuth() {
 
-    if (
-        !window.firebaseOnAuthStateChanged ||
-        !window.firebaseAuth
-    ) {
+    try {
+
+        await waitForFirebase();
+
+
+        window.firebaseOnAuthStateChanged(
+            window.firebaseAuth,
+            async user => {
+
+                currentUser =
+                    user;
+
+
+                if (user) {
+
+                    console.log(
+                        "Admin login:",
+                        user.email
+                    );
+
+                    await showDashboard();
+
+                } else {
+
+                    console.log(
+                        "Admin belum login."
+                    );
+
+                    showLogin();
+                }
+            }
+        );
+
+
+    } catch (error) {
 
         console.error(
-            "Firebase Authentication belum siap."
+            "Auth Firebase gagal:",
+            error
         );
 
         showLogin();
-
-        return;
-
     }
-
-
-    window.firebaseOnAuthStateChanged(
-        window.firebaseAuth,
-        async user => {
-
-            currentUser =
-                user;
-
-
-            if (user) {
-
-                console.log(
-                    "Admin login:",
-                    user.email
-                );
-
-
-                await showDashboard();
-
-            } else {
-
-                console.log(
-                    "Admin belum login."
-                );
-
-
-                showLogin();
-
-            }
-
-        }
-    );
-
 }
 
 
@@ -1495,7 +1241,6 @@ function setupImageUpload() {
             "templateImage"
         );
 
-
     const preview =
         document.getElementById(
             "imagePreview"
@@ -1506,9 +1251,7 @@ function setupImageUpload() {
         !input ||
         !preview
     ) {
-
         return;
-
     }
 
 
@@ -1520,8 +1263,7 @@ function setupImageUpload() {
                 input.files[0];
 
 
-            preview.innerHTML =
-                "";
+            preview.innerHTML = "";
 
             preview.classList.remove(
                 "show"
@@ -1550,11 +1292,9 @@ function setupImageUpload() {
                     "Gunakan JPG, PNG, atau WEBP."
                 );
 
-                input.value =
-                    "";
+                input.value = "";
 
                 return;
-
             }
 
 
@@ -1567,11 +1307,9 @@ function setupImageUpload() {
                     "Ukuran gambar maksimal 5 MB."
                 );
 
-                input.value =
-                    "";
+                input.value = "";
 
                 return;
-
             }
 
 
@@ -1589,21 +1327,15 @@ function setupImageUpload() {
                         >
                     `;
 
-
                     preview.classList.add(
                         "show"
                     );
-
                 };
 
 
-            reader.readAsDataURL(
-                file
-            );
-
+            reader.readAsDataURL(file);
         }
     );
-
 }
 
 
@@ -1620,7 +1352,6 @@ async function addTemplate() {
         );
 
         return;
-
     }
 
 
@@ -1629,24 +1360,20 @@ async function addTemplate() {
             "templateTitle"
         );
 
-
     const priceInput =
         document.getElementById(
             "templatePrice"
         );
-
 
     const linkInput =
         document.getElementById(
             "templateLink"
         );
 
-
     const imageInput =
         document.getElementById(
             "templateImage"
         );
-
 
     const button =
         document.getElementById(
@@ -1666,21 +1393,17 @@ async function addTemplate() {
         );
 
         return;
-
     }
 
 
     const title =
         titleInput.value.trim();
 
-
     const price =
         priceInput.value;
 
-
     const link =
         linkInput.value.trim();
-
 
     const imageFile =
         imageInput.files[0];
@@ -1697,7 +1420,6 @@ async function addTemplate() {
         );
 
         return;
-
     }
 
 
@@ -1706,8 +1428,7 @@ async function addTemplate() {
             ".category-check:checked"
         )
     ].map(
-        input =>
-            input.value
+        input => input.value
     );
 
 
@@ -1716,8 +1437,7 @@ async function addTemplate() {
             ".audience-check:checked"
         )
     ].map(
-        input =>
-            input.value
+        input => input.value
     );
 
 
@@ -1726,38 +1446,32 @@ async function addTemplate() {
             ".feature-check:checked"
         )
     ].map(
-        input =>
-            input.value
+        input => input.value
     );
 
 
-    if (
-        !categories.length
-    ) {
+    if (!categories.length) {
 
         alert(
             "Pilih minimal satu kategori."
         );
 
         return;
-
     }
 
 
-    if (
-        !audience.length
-    ) {
+    if (!audience.length) {
 
         alert(
             "Pilih minimal satu pilihan Who is it for?"
         );
 
         return;
-
     }
 
 
     if (
+        !window.firebaseStorage ||
         !window.firebaseStorageRef ||
         !window.firebaseUploadBytes ||
         !window.firebaseGetDownloadURL
@@ -1768,7 +1482,6 @@ async function addTemplate() {
         );
 
         return;
-
     }
 
 
@@ -1782,39 +1495,50 @@ async function addTemplate() {
         );
 
         return;
-
     }
 
 
     if (button) {
 
-        button.disabled =
-            true;
+        button.disabled = true;
 
         button.innerHTML =
             "Uploading...";
-
     }
 
 
     try {
 
-        /* CODE */
+        await waitForFirebase();
+
+
+        /* =============================================
+           GENERATE CODE
+        ============================================= */
 
         const code =
             generateCode();
 
 
-        /* EXTENSION */
+        /* =============================================
+           EXTENSION
+        ============================================= */
 
-        const extension =
+        let extension =
             imageFile.name
                 .split(".")
                 .pop()
                 .toLowerCase();
 
 
-        /* STORAGE PATH */
+        if (extension === "jpeg") {
+            extension = "jpg";
+        }
+
+
+        /* =============================================
+           STORAGE PATH
+        ============================================= */
 
         const filePath =
             `templates/${code}.${extension}`;
@@ -1827,10 +1551,12 @@ async function addTemplate() {
             );
 
 
-        /* UPLOAD */
+        /* =============================================
+           UPLOAD IMAGE
+        ============================================= */
 
         console.log(
-            `Uploading ${filePath}...`
+            `Mengupload ${filePath}...`
         );
 
 
@@ -1845,7 +1571,9 @@ async function addTemplate() {
         );
 
 
-        /* DOWNLOAD URL */
+        /* =============================================
+           DOWNLOAD URL
+        ============================================= */
 
         const imageURL =
             await window.firebaseGetDownloadURL(
@@ -1854,19 +1582,19 @@ async function addTemplate() {
 
 
         console.log(
-            "Download URL berhasil didapat."
+            "URL gambar berhasil dibuat."
         );
 
 
-        /* DATA */
+        /* =============================================
+           TEMPLATE DATA
+        ============================================= */
 
         const template = {
 
-            code:
-                code,
+            code,
 
-            title:
-                title,
+            title,
 
             price:
                 Number(price),
@@ -1874,28 +1602,25 @@ async function addTemplate() {
             image:
                 imageURL,
 
-            link:
-                link,
+            link,
 
-            categories:
-                categories,
+            categories,
 
-            audience:
-                audience,
+            audience,
 
-            features:
-                features,
+            features,
 
             createdAt:
                 new Date().toISOString(),
 
             createdBy:
                 currentUser.uid
-
         };
 
 
-        /* FIRESTORE */
+        /* =============================================
+           FIRESTORE
+        ============================================= */
 
         await window.firebaseSetDoc(
             window.firebaseDoc(
@@ -1908,28 +1633,30 @@ async function addTemplate() {
 
 
         console.log(
-            "Data template berhasil disimpan ke Firestore."
+            "Template berhasil disimpan ke Firestore."
         );
 
 
-        /* LOCAL */
+        /* =============================================
+           LOCAL ARRAY
+        ============================================= */
 
         templates.push({
-
-            id:
-                code,
-
+            id: code,
             ...template
-
         });
 
 
-        /* CLEAR */
+        /* =============================================
+           CLEAR FORM
+        ============================================= */
 
         clearForm();
 
 
-        /* REFRESH */
+        /* =============================================
+           REFRESH UI
+        ============================================= */
 
         renderAdminList();
 
@@ -1950,22 +1677,21 @@ async function addTemplate() {
 
 
         alert(
-            "Gagal menyimpan template. Lihat Console untuk detail error."
+            "Gagal menyimpan template. Buka Console (F12) untuk melihat detail error."
         );
 
+
+    } finally {
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+            button.innerHTML =
+                "Add Template <span>+</span>";
+        }
     }
-
-
-    if (button) {
-
-        button.disabled =
-            false;
-
-        button.innerHTML =
-            'Add Template <span>+</span>';
-
-    }
-
 }
 
 
@@ -1980,18 +1706,15 @@ function clearForm() {
             "templateTitle"
         );
 
-
     const price =
         document.getElementById(
             "templatePrice"
         );
 
-
     const link =
         document.getElementById(
             "templateLink"
         );
-
 
     const image =
         document.getElementById(
@@ -2003,16 +1726,13 @@ function clearForm() {
         title.value = "";
     }
 
-
     if (price) {
         price.value = "";
     }
 
-
     if (link) {
         link.value = "";
     }
-
 
     if (image) {
         image.value = "";
@@ -2023,14 +1743,9 @@ function clearForm() {
         .querySelectorAll(
             ".category-check, .audience-check, .feature-check"
         )
-        .forEach(
-            input => {
-
-                input.checked =
-                    false;
-
-            }
-        );
+        .forEach(input => {
+            input.checked = false;
+        });
 
 
     const preview =
@@ -2041,15 +1756,12 @@ function clearForm() {
 
     if (preview) {
 
-        preview.innerHTML =
-            "";
+        preview.innerHTML = "";
 
         preview.classList.remove(
             "show"
         );
-
     }
-
 }
 
 
@@ -2070,16 +1782,12 @@ function renderAdminList() {
     }
 
 
-    container.innerHTML =
-        "";
+    container.innerHTML = "";
 
 
-    if (
-        templates.length === 0
-    ) {
+    if (templates.length === 0) {
 
         container.innerHTML = `
-
             <div
                 class="empty-state"
                 style="display:block;padding:45px 10px"
@@ -2098,11 +1806,9 @@ function renderAdminList() {
                 </p>
 
             </div>
-
         `;
 
         return;
-
     }
 
 
@@ -2115,40 +1821,36 @@ function renderAdminList() {
                         a.createdAt || 0
                     );
 
-
                 const dateB =
                     new Date(
                         b.createdAt || 0
                     );
 
-
                 return dateB - dateA;
-
             }
         );
 
 
-    list.forEach(
-        template => {
+    list.forEach(template => {
 
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-
-            item.className =
-                "admin-template-item";
+        const item =
+            document.createElement(
+                "div"
+            );
 
 
-            const tags =
-                (
-                    Array.isArray(
-                        template.categories
-                    )
-                        ? template.categories
-                        : []
+        item.className =
+            "admin-template-item";
+
+
+        const tags =
+            (
+                Array.isArray(
+                    template.categories
                 )
+                    ? template.categories
+                    : []
+            )
                 .slice(0, 3)
                 .map(
                     category => `
@@ -2160,132 +1862,125 @@ function renderAdminList() {
                 .join("");
 
 
-            const image =
-                template.image ||
-                ADMIN_PLACEHOLDER;
+        const image =
+            template.image ||
+            ADMIN_PLACEHOLDER;
 
 
-            item.innerHTML = `
+        item.innerHTML = `
+            <img
+                class="admin-thumb"
+                src="${safe(image)}"
+                alt=""
+            >
 
-                <img
-                    class="admin-thumb"
-                    src="${safe(image)}"
-                    alt=""
+
+            <div
+                class="admin-template-info"
+            >
+
+                <strong>
+                    ${safe(template.title)}
+                </strong>
+
+                <span>
+                    ${safe(template.code)}
+                    ·
+                    ${rupiah(template.price)}
+                </span>
+
+
+                <div
+                    class="admin-template-tags"
                 >
-
-
-                <div class="admin-template-info">
-
-                    <strong>
-                        ${safe(template.title)}
-                    </strong>
-
-                    <span>
-                        ${safe(template.code)}
-                        ·
-                        ${rupiah(template.price)}
-                    </span>
-
-
-                    <div class="admin-template-tags">
-                        ${tags}
-                    </div>
-
+                    ${tags}
                 </div>
 
-
-                <div class="admin-item-actions">
-
-                    <button
-                        type="button"
-                        class="admin-preview-btn"
-                    >
-                        Preview
-                    </button>
+            </div>
 
 
-                    <button
-                        type="button"
-                        class="delete admin-delete-btn"
-                    >
-                        Delete
-                    </button>
+            <div
+                class="admin-item-actions"
+            >
 
-                </div>
-
-            `;
-
-
-            const imageElement =
-                item.querySelector(
-                    ".admin-thumb"
-                );
+                <button
+                    type="button"
+                    class="admin-preview-btn"
+                >
+                    Preview
+                </button>
 
 
-            if (imageElement) {
+                <button
+                    type="button"
+                    class="delete admin-delete-btn"
+                >
+                    Delete
+                </button>
 
-                imageElement.onerror =
-                    () => {
-
-                        imageElement.src =
-                            ADMIN_PLACEHOLDER;
-
-                    };
-
-            }
+            </div>
+        `;
 
 
-            const previewButton =
-                item.querySelector(
-                    ".admin-preview-btn"
-                );
-
-
-            if (previewButton) {
-
-                previewButton.addEventListener(
-                    "click",
-                    () => {
-
-                        previewTemplate(
-                            template.id
-                        );
-
-                    }
-                );
-
-            }
-
-
-            const deleteButton =
-                item.querySelector(
-                    ".admin-delete-btn"
-                );
-
-
-            if (deleteButton) {
-
-                deleteButton.addEventListener(
-                    "click",
-                    () => {
-
-                        deleteTemplate(
-                            template.id
-                        );
-
-                    }
-                );
-
-            }
-
-
-            container.appendChild(
-                item
+        const imageElement =
+            item.querySelector(
+                ".admin-thumb"
             );
 
-        }
-    );
 
+        if (imageElement) {
+
+            imageElement.onerror =
+                () => {
+
+                    imageElement.src =
+                        ADMIN_PLACEHOLDER;
+                };
+        }
+
+
+        const previewButton =
+            item.querySelector(
+                ".admin-preview-btn"
+            );
+
+
+        if (previewButton) {
+
+            previewButton.addEventListener(
+                "click",
+                () => {
+
+                    previewTemplate(
+                        template.id
+                    );
+                }
+            );
+        }
+
+
+        const deleteButton =
+            item.querySelector(
+                ".admin-delete-btn"
+            );
+
+
+        if (deleteButton) {
+
+            deleteButton.addEventListener(
+                "click",
+                () => {
+
+                    deleteTemplate(
+                        template.id
+                    );
+                }
+            );
+        }
+
+
+        container.appendChild(item);
+    });
 }
 
 
@@ -2315,7 +2010,6 @@ function previewTemplate(id) {
         );
 
         return;
-
     }
 
 
@@ -2323,7 +2017,6 @@ function previewTemplate(id) {
         template.link,
         "_blank"
     );
-
 }
 
 
@@ -2340,7 +2033,6 @@ async function deleteTemplate(id) {
         );
 
         return;
-
     }
 
 
@@ -2370,7 +2062,12 @@ async function deleteTemplate(id) {
 
     try {
 
-        /* FIRESTORE */
+        await waitForFirebase();
+
+
+        /* =============================================
+           DELETE FIRESTORE
+        ============================================= */
 
         await window.firebaseDeleteDoc(
             window.firebaseDoc(
@@ -2381,17 +2078,19 @@ async function deleteTemplate(id) {
         );
 
 
-        /* STORAGE */
+        /* =============================================
+           DELETE STORAGE
+        ============================================= */
 
         if (
+            template.code &&
             template.image &&
             window.firebaseDeleteObject
         ) {
 
             try {
 
-                let extension =
-                    "jpg";
+                let extension = "jpg";
 
 
                 const match =
@@ -2405,8 +2104,13 @@ async function deleteTemplate(id) {
                 if (match) {
 
                     extension =
-                        match[1];
+                        match[1].toLowerCase();
 
+                    if (
+                        extension === "jpeg"
+                    ) {
+                        extension = "jpg";
+                    }
                 }
 
 
@@ -2422,19 +2126,24 @@ async function deleteTemplate(id) {
                 );
 
 
+                console.log(
+                    "Gambar Storage berhasil dihapus."
+                );
+
+
             } catch (storageError) {
 
                 console.warn(
                     "Gambar Storage tidak berhasil dihapus:",
                     storageError
                 );
-
             }
-
         }
 
 
-        /* LOCAL */
+        /* =============================================
+           LOCAL ARRAY
+        ============================================= */
 
         templates =
             templates.filter(
@@ -2463,11 +2172,9 @@ async function deleteTemplate(id) {
 
 
         alert(
-            "Gagal menghapus template. Lihat Console."
+            "Gagal menghapus template. Lihat Console (F12)."
         );
-
     }
-
 }
 
 
@@ -2482,7 +2189,6 @@ function updateStats() {
             "templateCount"
         );
 
-
     const next =
         document.getElementById(
             "nextCode"
@@ -2493,7 +2199,6 @@ function updateStats() {
 
         count.textContent =
             templates.length;
-
     }
 
 
@@ -2501,9 +2206,7 @@ function updateStats() {
 
         next.textContent =
             generateCode();
-
     }
-
 }
 
 
@@ -2519,81 +2222,71 @@ function setupSidebar() {
         );
 
 
-    buttons.forEach(
-        button => {
+    buttons.forEach(button => {
 
-            button.addEventListener(
-                "click",
-                () => {
+        button.addEventListener(
+            "click",
+            () => {
 
-                    buttons.forEach(
-                        item =>
-                            item.classList.remove(
-                                "active"
-                            )
-                    );
-
-
-                    button.classList.add(
+                buttons.forEach(item => {
+                    item.classList.remove(
                         "active"
                     );
+                });
 
 
-                    const section =
-                        button.dataset.section;
+                button.classList.add(
+                    "active"
+                );
 
 
-                    if (
-                        section ===
-                        "add"
-                    ) {
-
-                        const element =
-                            document.getElementById(
-                                "addSection"
-                            );
+                const section =
+                    button.dataset.section;
 
 
-                        if (element) {
+                if (
+                    section ===
+                    "add"
+                ) {
 
-                            element.scrollIntoView({
-                                behavior:
-                                    "smooth"
-                            });
+                    const element =
+                        document.getElementById(
+                            "addSection"
+                        );
 
-                        }
 
+                    if (element) {
+
+                        element.scrollIntoView({
+                            behavior:
+                                "smooth"
+                        });
                     }
-
-
-                    if (
-                        section ===
-                        "templates"
-                    ) {
-
-                        const element =
-                            document.getElementById(
-                                "templatesSection"
-                            );
-
-
-                        if (element) {
-
-                            element.scrollIntoView({
-                                behavior:
-                                    "smooth"
-                            });
-
-                        }
-
-                    }
-
                 }
-            );
 
-        }
-    );
 
+                if (
+                    section ===
+                    "templates"
+                ) {
+
+                    const element =
+                        document.getElementById(
+                            "templatesSection"
+                        );
+
+
+                    if (element) {
+
+                        element.scrollIntoView({
+                            behavior:
+                                "smooth"
+                        });
+                    }
+                }
+            }
+        );
+    });
 }
 
 
@@ -2618,7 +2311,6 @@ function setupAdminTheme() {
         "click",
         toggleTheme
     );
-
 }
 
 
@@ -2643,7 +2335,6 @@ function setupPublicTheme() {
         "click",
         toggleTheme
     );
-
 }
 
 
@@ -2665,7 +2356,6 @@ function setupLoginEvents() {
             "click",
             loginAdmin
         );
-
     }
 
 
@@ -2687,12 +2377,9 @@ function setupLoginEvents() {
                 ) {
 
                     loginAdmin();
-
                 }
-
             }
         );
-
     }
 
 
@@ -2714,12 +2401,9 @@ function setupLoginEvents() {
                 ) {
 
                     loginAdmin();
-
                 }
-
             }
         );
-
     }
 
 
@@ -2735,9 +2419,7 @@ function setupLoginEvents() {
             "click",
             logout
         );
-
     }
-
 }
 
 
@@ -2751,9 +2433,7 @@ async function logout() {
         !window.firebaseSignOut ||
         !window.firebaseAuth
     ) {
-
         return;
-
     }
 
 
@@ -2763,9 +2443,7 @@ async function logout() {
             window.firebaseAuth
         );
 
-
-        currentUser =
-            null;
+        currentUser = null;
 
 
     } catch (error) {
@@ -2774,9 +2452,7 @@ async function logout() {
             "Logout gagal:",
             error
         );
-
     }
-
 }
 
 
@@ -2798,9 +2474,7 @@ function setupAdminEvents() {
             "click",
             addTemplate
         );
-
     }
-
 }
 
 
@@ -2818,8 +2492,17 @@ async function initPublic() {
 
     setupModalClose();
 
-    await loadTemplates();
+    try {
 
+        await loadTemplates();
+
+    } catch (error) {
+
+        console.error(
+            "Public initialization gagal:",
+            error
+        );
+    }
 }
 
 
@@ -2842,7 +2525,6 @@ function initAdmin() {
     setupAdminEvents();
 
     setupAuth();
-
 }
 
 
@@ -2861,9 +2543,7 @@ document.addEventListener(
         } else {
 
             initPublic();
-
         }
-
     }
 );
 
