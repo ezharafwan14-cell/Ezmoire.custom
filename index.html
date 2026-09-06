@@ -1,682 +1,703 @@
 <!DOCTYPE html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>ezmoire — Digital Moments</title>
+<head>
+
+    <meta charset="UTF-8">
 
     <meta
-        name="description"
-        content="Ezmoire — digital greeting website templates."
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
     >
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>ezmoire — Admin</title>
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
 
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap"
         rel="stylesheet"
     >
 
-    <link rel="stylesheet" href="style.css">
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
 </head>
 
-<body>
 
-<header class="navbar">
+<body class="admin-page">
 
-    <a href="#" class="logo">
-        <span>e</span>zmoire
-    </a>
 
-    <nav class="nav-menu">
-        <a href="#home">Home</a>
-        <a href="#templates">Templates</a>
-        <a href="#features">Features</a>
-    </nav>
+<!-- =====================================================
+     LOGIN SCREEN
+===================================================== -->
 
-    <div class="nav-right">
+<div
+    id="loginScreen"
+    class="admin-login-screen"
+>
+
+    <div class="admin-login-card">
+
+        <a
+            href="index.html"
+            class="logo"
+        >
+            <span>e</span>zmoire
+        </a>
+
+        <small>
+            ADMIN PANEL
+        </small>
+
+        <h1>
+            Welcome back.
+        </h1>
+
+        <p>
+            Masukkan email dan password untuk
+            mengakses dashboard Ezmoire.
+        </p>
+
+
+        <!-- EMAIL -->
+
+        <label for="adminEmail">
+            Email
+        </label>
+
+        <input
+            id="adminEmail"
+            type="email"
+            placeholder="admin@example.com"
+            autocomplete="username"
+        >
+
+
+        <!-- PASSWORD -->
+
+        <label for="adminPassword">
+            Password
+        </label>
+
+        <input
+            id="adminPassword"
+            type="password"
+            placeholder="Masukkan password"
+            autocomplete="current-password"
+        >
+
+
+        <!-- LOGIN -->
 
         <button
-            id="themeBtn"
-            class="icon-btn"
+            id="loginBtn"
+            class="btn btn-primary full-btn"
             type="button"
-            aria-label="Change theme"
         >
-            ☾
+            Login
         </button>
 
-        <a href="admin.html" class="admin-open-btn">
-            Admin
+        <div
+            id="loginError"
+            class="error-text"
+        ></div>
+
+
+        <!-- BACK -->
+
+        <a
+            href="index.html"
+            class="back-link"
+        >
+            ← Kembali ke website
         </a>
 
     </div>
 
-</header>
+</div>
 
 
-<main>
 
-<!-- ================= HERO ================= -->
-
-<section class="hero" id="home">
-
-    <div class="hero-text">
-
-        <div class="hero-label">
-            DIGITAL GREETING EXPERIENCE
-        </div>
-
-        <h1>
-            Make a moment
-            <em>worth keeping.</em>
-        </h1>
-
-        <p>
-            Website ucapan digital yang dirancang
-            untuk membuat setiap momen spesial terasa
-            lebih personal.
-        </p>
-
-        <div class="hero-actions">
-
-            <a
-                href="#templates"
-                class="btn btn-primary"
-            >
-                Explore templates
-                <span>→</span>
-            </a>
-
-            <a
-                href="#features"
-                class="btn btn-secondary"
-            >
-                Learn more
-            </a>
-
-        </div>
-
-    </div>
-
-
-    <div class="hero-preview">
-
-        <div class="preview-glow"></div>
-
-        <div class="hero-window">
-
-            <div class="window-top">
-
-                <div class="window-dots">
-                    <i></i>
-                    <i></i>
-                    <i></i>
-                </div>
-
-                <span>ezmoire</span>
-
-                <div></div>
-
-            </div>
-
-
-            <div class="hero-card-content">
-
-                <small>
-                    A LITTLE SURPRISE
-                </small>
-
-                <h2>
-                    Happy<br>
-                    Birthday.
-                </h2>
-
-                <p>
-                    For someone special ♡
-                </p>
-
-                <div class="hero-card-line"></div>
-
-                <span>
-                    Made with love by Ezmoire
-                </span>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-<!-- ================= WHO ================= -->
-
-<section class="who-section">
-
-    <div class="section-title left">
-
-        <small>
-            FIND YOUR TEMPLATE
-        </small>
-
-        <h2>
-            Who is it for?
-        </h2>
-
-    </div>
-
-
-    <div class="who-options">
-
-        <button
-            class="who-btn active"
-            data-audience="all"
-            type="button"
-        >
-            All
-        </button>
-
-        <button
-            class="who-btn"
-            data-audience="Pacar"
-            type="button"
-        >
-            ♡ Pacar
-        </button>
-
-        <button
-            class="who-btn"
-            data-audience="Sahabat"
-            type="button"
-        >
-            ✦ Sahabat
-        </button>
-
-        <button
-            class="who-btn"
-            data-audience="Keluarga"
-            type="button"
-        >
-            Keluarga
-        </button>
-
-        <button
-            class="who-btn"
-            data-audience="Teman"
-            type="button"
-        >
-            Teman
-        </button>
-
-        <button
-            class="who-btn"
-            data-audience="Lainnya"
-            type="button"
-        >
-            Lainnya
-        </button>
-
-    </div>
-
-</section>
-
-
-<!-- ================= TEMPLATES ================= -->
-
-<section
-    class="templates-section"
-    id="templates"
->
-
-    <div class="section-title">
-
-        <small>
-            THE COLLECTION
-        </small>
-
-        <h2>
-            Choose your moment.
-        </h2>
-
-        <p>
-            Pilih template yang paling sesuai
-            dengan cerita dan orang yang ingin
-            kamu beri kejutan.
-        </p>
-
-    </div>
-
-
-    <div class="category-wrapper">
-
-        <div class="category-scroll">
-
-            <button
-                class="category-btn active"
-                data-category="all"
-                type="button"
-            >
-                All
-            </button>
-
-            <button
-                class="category-btn"
-                data-category="Birthday"
-                type="button"
-            >
-                Birthday
-            </button>
-
-            <button
-                class="category-btn"
-                data-category="Romantic"
-                type="button"
-            >
-                Romantic
-            </button>
-
-            <button
-                class="category-btn"
-                data-category="Friendship"
-                type="button"
-            >
-                Friendship
-            </button>
-
-            <button
-                class="category-btn"
-                data-category="Family"
-                type="button"
-            >
-                Family
-            </button>
-
-            <button
-                class="category-btn"
-                data-category="Graduation"
-                type="button"
-            >
-                Graduation
-            </button>
-
-            <button
-                class="category-btn"
-                data-category="Anniversary"
-                type="button"
-            >
-                Anniversary
-            </button>
-
-            <button
-                class="category-btn"
-                data-category="Appreciation"
-                type="button"
-            >
-                Appreciation
-            </button>
-
-            <button
-                class="category-btn"
-                data-category="Celebration"
-                type="button"
-            >
-                Celebration
-            </button>
-
-            <button
-                class="category-btn"
-                data-category="Simple & Minimal"
-                type="button"
-            >
-                Minimal
-            </button>
-
-            <button
-                class="category-btn"
-                data-category="Custom / Other"
-                type="button"
-            >
-                Other
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <div
-        id="templateGrid"
-        class="template-grid"
-    ></div>
-
-
-    <div
-        id="emptyState"
-        class="empty-state"
-    >
-
-        <div class="empty-symbol">
-            ♡
-        </div>
-
-        <h3>
-            Template belum tersedia
-        </h3>
-
-        <p>
-            Coba pilih kategori atau tujuan lainnya.
-        </p>
-
-    </div>
-
-</section>
-
-
-<!-- ================= FEATURES ================= -->
-
-<section
-    class="features-section"
-    id="features"
->
-
-    <div class="section-title">
-
-        <small>
-            WHAT'S INCLUDED
-        </small>
-
-        <h2>
-            Made to feel personal.
-        </h2>
-
-    </div>
-
-
-    <div class="features-grid">
-
-        <article class="feature-card">
-
-            <span class="feature-number">
-                01
-            </span>
-
-            <div class="feature-icon">
-                ♡
-            </div>
-
-            <h3>
-                Custom Name
-            </h3>
-
-            <p>
-                Nama penerima bisa disesuaikan
-                agar terasa lebih personal.
-            </p>
-
-        </article>
-
-
-        <article class="feature-card">
-
-            <span class="feature-number">
-                02
-            </span>
-
-            <div class="feature-icon">
-                Aa
-            </div>
-
-            <h3>
-                Custom Greeting
-            </h3>
-
-            <p>
-                Ucapan dapat dibuat sesuai
-                pesan yang ingin disampaikan.
-            </p>
-
-        </article>
-
-
-        <article class="feature-card">
-
-            <span class="feature-number">
-                03
-            </span>
-
-            <div class="feature-icon">
-                ▣
-            </div>
-
-            <h3>
-                Custom Photo
-            </h3>
-
-            <p>
-                Tambahkan foto pilihanmu
-                ke dalam website.
-            </p>
-
-        </article>
-
-
-        <article class="feature-card">
-
-            <span class="feature-number">
-                04
-            </span>
-
-            <div class="feature-icon">
-                ♪
-            </div>
-
-            <h3>
-                Custom Music
-            </h3>
-
-            <p>
-                Buat pengalaman lebih hidup
-                dengan musik pilihan.
-            </p>
-
-        </article>
-
-
-        <article class="feature-card">
-
-            <span class="feature-number">
-                05
-            </span>
-
-            <div class="feature-icon">
-                ✦
-            </div>
-
-            <h3>
-                Animation
-            </h3>
-
-            <p>
-                Animasi lembut untuk membuat
-                website terasa lebih hidup.
-            </p>
-
-        </article>
-
-
-        <article class="feature-card">
-
-            <span class="feature-number">
-                06
-            </span>
-
-            <div class="feature-icon">
-                ↗
-            </div>
-
-            <h3>
-                Personal Link
-            </h3>
-
-            <p>
-                Website dapat dibagikan
-                melalui link pribadi.
-            </p>
-
-        </article>
-
-    </div>
-
-</section>
-
-</main>
-
-
-<footer>
-
-    <div class="footer-inner">
-
-        <div class="footer-brand">
-
-            <a href="#" class="logo">
-                <span>e</span>zmoire
-            </a>
-
-            <p>
-                Digital moments, made personal.
-            </p>
-
-        </div>
-
-        <div class="footer-copy">
-            © 2026 Ezmoire
-        </div>
-
-    </div>
-
-</footer>
-
-
-<!-- ================= DETAIL MODAL ================= -->
+<!-- =====================================================
+     ADMIN DASHBOARD
+===================================================== -->
 
 <div
-    id="detailModal"
-    class="modal"
+    id="adminDashboard"
+    class="admin-dashboard hidden"
 >
 
-    <div class="detail-modal">
 
-        <button
-            class="modal-close"
-            id="detailClose"
-            type="button"
-        >
-            ×
-        </button>
+    <!-- =================================================
+         SIDEBAR
+    ================================================== -->
 
+    <aside class="admin-sidebar">
 
-        <div class="detail-image">
-
-            <img
-                id="detailImage"
-                src=""
-                alt=""
-            >
-
+        <div class="admin-logo">
+            <span>e</span>zmoire
         </div>
 
 
-        <div class="detail-info">
+        <div class="admin-sidebar-label">
+            MANAGEMENT
+        </div>
 
-            <small id="detailCode">
-                EZ001
-            </small>
 
-            <h2 id="detailTitle">
-                Template
-            </h2>
+        <button
+            class="sidebar-item active"
+            data-section="templates"
+            type="button"
+        >
+            Templates
+        </button>
 
-            <div
-                id="detailPrice"
-                class="detail-price"
+
+        <button
+            class="sidebar-item"
+            data-section="add"
+            type="button"
+        >
+            + Add Template
+        </button>
+
+
+        <div class="sidebar-bottom">
+
+            <a
+                href="index.html"
+                class="sidebar-item"
             >
-                Rp 25.000
-            </div>
+                ← View Website
+            </a>
 
 
-            <div class="detail-block">
+            <button
+                id="logoutBtn"
+                class="sidebar-item"
+                type="button"
+            >
+                Logout
+            </button>
 
-                <h4>
-                    Categories
-                </h4>
+        </div>
 
-                <div
-                    id="detailCategories"
-                    class="detail-tags"
-                ></div>
-
-            </div>
-
-
-            <div class="detail-block">
-
-                <h4>
-                    Who is it for?
-                </h4>
-
-                <div
-                    id="detailAudience"
-                    class="detail-tags"
-                ></div>
-
-            </div>
+    </aside>
 
 
-            <div class="detail-block">
 
-                <h4>
-                    Features
-                </h4>
+    <!-- =================================================
+         MAIN
+    ================================================== -->
 
-                <div
-                    id="detailFeatures"
-                    class="detail-features"
-                ></div>
+    <main class="admin-main">
+
+
+        <!-- TOP -->
+
+        <div class="admin-top">
+
+            <div>
+
+                <small>
+                    EZMOIRE / ADMIN
+                </small>
+
+                <h1>
+                    Template Manager
+                </h1>
 
             </div>
 
 
-            <div class="detail-actions">
-
-                <a
-                    id="previewBtn"
-                    href="#"
-                    target="_blank"
-                    class="btn btn-secondary"
-                >
-                    Preview
-                </a>
+            <div class="admin-top-actions">
 
                 <button
-                    id="detailWhatsapp"
-                    class="btn btn-primary"
+                    id="adminThemeBtn"
+                    class="icon-btn"
                     type="button"
+                    aria-label="Toggle theme"
                 >
-                    Pesan via WhatsApp
+                    ☾
                 </button>
 
             </div>
 
         </div>
 
-    </div>
+
+
+        <!-- =================================================
+             STATS
+        ================================================== -->
+
+        <section class="admin-stats">
+
+            <div class="stat-box">
+
+                <small>
+                    TOTAL TEMPLATES
+                </small>
+
+                <strong id="templateCount">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="stat-box">
+
+                <small>
+                    NEXT TEMPLATE CODE
+                </small>
+
+                <strong id="nextCode">
+                    EZ001
+                </strong>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             ADD TEMPLATE
+        ================================================== -->
+
+        <section
+            id="addSection"
+            class="admin-section"
+        >
+
+            <div class="admin-form-card">
+
+
+                <div class="form-heading">
+
+                    <small>
+                        NEW TEMPLATE
+                    </small>
+
+                    <h2>
+                        Add template
+                    </h2>
+
+                    <p>
+                        Tambahkan template baru tanpa
+                        perlu mengubah kode website.
+                    </p>
+
+                </div>
+
+
+
+                <!-- COVER IMAGE -->
+
+                <label class="form-label">
+                    Cover Image
+                </label>
+
+                <input
+                    id="templateImage"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    hidden
+                >
+
+                <label
+                    for="templateImage"
+                    class="image-upload-button"
+                >
+
+                    <span class="upload-icon">
+                        +
+                    </span>
+
+                    <strong>
+                        Choose image
+                    </strong>
+
+                    <small>
+                        JPG, PNG atau WEBP • Maks. 5 MB
+                    </small>
+
+                </label>
+
+
+                <div
+                    id="imagePreview"
+                    class="image-preview"
+                ></div>
+
+
+
+                <!-- TITLE + PRICE -->
+
+                <div class="two-inputs">
+
+                    <div>
+
+                        <label class="form-label">
+                            Template Title
+                        </label>
+
+                        <input
+                            id="templateTitle"
+                            class="admin-input"
+                            type="text"
+                            placeholder="Contoh: Blue Birthday"
+                        >
+
+                    </div>
+
+
+                    <div>
+
+                        <label class="form-label">
+                            Harga
+                        </label>
+
+                        <input
+                            id="templatePrice"
+                            class="admin-input"
+                            type="number"
+                            min="0"
+                            step="1000"
+                            placeholder="25000"
+                        >
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- PREVIEW LINK -->
+
+                <label class="form-label">
+                    Link Website Preview
+                </label>
+
+                <input
+                    id="templateLink"
+                    class="admin-input"
+                    type="url"
+                    placeholder="https://..."
+                >
+
+                <p class="input-help">
+                    Link website contoh template yang
+                    dapat dibuka oleh pengunjung.
+                </p>
+
+
+
+                <!-- CATEGORIES -->
+
+                <label class="form-label section-form-label">
+                    Categories
+                </label>
+
+                <div class="admin-check-grid">
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="category-check"
+                            value="Birthday"
+                        >
+                        Birthday
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="category-check"
+                            value="Romantic"
+                        >
+                        Romantic
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="category-check"
+                            value="Friendship"
+                        >
+                        Friendship
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="category-check"
+                            value="Family"
+                        >
+                        Family
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="category-check"
+                            value="Graduation"
+                        >
+                        Graduation
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="category-check"
+                            value="Anniversary"
+                        >
+                        Anniversary
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="category-check"
+                            value="Appreciation"
+                        >
+                        Appreciation
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="category-check"
+                            value="Celebration"
+                        >
+                        Celebration
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="category-check"
+                            value="Simple & Minimal"
+                        >
+                        Simple & Minimal
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="category-check"
+                            value="Custom / Other"
+                        >
+                        Custom / Other
+                    </label>
+
+                </div>
+
+
+
+                <!-- AUDIENCE -->
+
+                <label class="form-label section-form-label">
+                    Who is it for?
+                </label>
+
+                <div class="admin-check-grid">
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="audience-check"
+                            value="Pacar"
+                        >
+                        ♡ Pacar
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="audience-check"
+                            value="Sahabat"
+                        >
+                        ✦ Sahabat
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="audience-check"
+                            value="Keluarga"
+                        >
+                        Keluarga
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="audience-check"
+                            value="Teman"
+                        >
+                        Teman
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="audience-check"
+                            value="Lainnya"
+                        >
+                        Lainnya
+                    </label>
+
+                </div>
+
+
+
+                <!-- FEATURES -->
+
+                <label class="form-label section-form-label">
+                    Available Features
+                </label>
+
+                <div class="admin-check-grid">
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="feature-check"
+                            value="Custom nama"
+                        >
+                        Custom nama
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="feature-check"
+                            value="Custom ucapan"
+                        >
+                        Custom ucapan
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="feature-check"
+                            value="Custom foto"
+                        >
+                        Custom foto
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="feature-check"
+                            value="Custom musik"
+                        >
+                        Custom musik
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="feature-check"
+                            value="Dapat animasi"
+                        >
+                        Dapat animasi
+                    </label>
+
+                    <label>
+                        <input
+                            type="checkbox"
+                            class="feature-check"
+                            value="Link website"
+                        >
+                        Link website
+                    </label>
+
+                </div>
+
+
+
+                <!-- ADD TEMPLATE -->
+
+                <button
+                    id="addTemplateBtn"
+                    class="btn btn-primary full-btn add-template-btn"
+                    type="button"
+                >
+                    Add Template
+                    <span>+</span>
+                </button>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             TEMPLATE LIST
+        ================================================== -->
+
+        <section
+            id="templatesSection"
+            class="admin-section"
+        >
+
+            <div class="admin-list-card">
+
+                <div class="form-heading">
+
+                    <small>
+                        YOUR COLLECTION
+                    </small>
+
+                    <h2>
+                        Templates
+                    </h2>
+
+                </div>
+
+
+                <div
+                    id="adminTemplateList"
+                    class="admin-template-list"
+                ></div>
+
+            </div>
+
+        </section>
+
+    </main>
 
 </div>
 
-<script type="module" src="firebase.js"></script>
-<script type="module" src="script.js"></script>
+
+
+<!-- =====================================================
+     FIREBASE
+===================================================== -->
+
+<script
+    type="module"
+    src="firebase.js"
+></script>
+
+
+<!-- =====================================================
+     MAIN SCRIPT
+===================================================== -->
+
+<script
+    src="script.js"
+></script>
+
 </body>
 </html>
