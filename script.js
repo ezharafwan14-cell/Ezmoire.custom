@@ -1,53 +1,38 @@
 /* =====================================================
-   EZMOIRE — ADMIN
+   EZMOIRE
+   SINGLE SCRIPT
+   PUBLIC + ADMIN + FIREBASE
 ===================================================== */
 
-const ADMIN_PASSWORD = "ezmoire2026";
 
+/* =====================================================
+   CONFIG
+===================================================== */
+
+const WHATSAPP = "6288216358530";
+
+const PLACEHOLDER =
+    "https://placehold.co/800x1000/15181e/ffffff?text=Ezmoire";
+
+const ADMIN_PLACEHOLDER =
+    "https://placehold.co/100x120/15181e/ffffff?text=E";
+
+
+/* =====================================================
+   DATA
+===================================================== */
 
 let templates = [];
 
+let currentCategory = "all";
 
-/* =====================================================
-   LOAD
-===================================================== */
+let currentAudience = "all";
 
-function loadTemplates() {
-
-    try {
-
-        templates =
-            JSON.parse(
-                localStorage.getItem(
-                    "ezmoireTemplates"
-                )
-            ) || [];
-
-    } catch {
-
-        templates = [];
-
-    }
-
-}
+let currentUser = null;
 
 
 /* =====================================================
-   SAVE
-===================================================== */
-
-function saveTemplates() {
-
-    localStorage.setItem(
-        "ezmoireTemplates",
-        JSON.stringify(templates)
-    );
-
-}
-
-
-/* =====================================================
-   FORMAT
+   FORMAT RUPIAH
 ===================================================== */
 
 function rupiah(value) {
@@ -59,10 +44,15 @@ function rupiah(value) {
             currency: "IDR",
             maximumFractionDigits: 0
         }
-    ).format(Number(value) || 0);
-
+    ).format(
+        Number(value) || 0
+    );
 }
 
+
+/* =====================================================
+   SAFE HTML
+===================================================== */
 
 function safe(value) {
 
@@ -73,12 +63,199 @@ function safe(value) {
         value ?? "";
 
     return div.innerHTML;
+}
+
+
+/* =====================================================
+   PAGE CHECK
+===================================================== */
+
+function isAdminPage() {
+
+    return !!document.getElementById(
+        "adminDashboard"
+    );
+}
+
+
+function isPublicPage() {
+
+    return !!document.getElementById(
+        "templateGrid"
+    );
+}
+
+
+/* =====================================================
+   FIREBASE CHECK
+===================================================== */
+
+function firebaseReady() {
+
+    return (
+        window.firebaseDB &&
+        window.firebaseCollection &&
+        window.firebaseGetDocs
+    );
+}
+
+
+/* =====================================================
+   LOAD TEMPLATES
+===================================================== */
+
+async function loadTemplates() {
+
+    if (!firebaseReady()) {
+
+        console.error(
+            "Firebase belum siap."
+        );
+
+        return;
+    }
+
+    try {
+
+        const snapshot =
+            await window.firebaseGetDocs(
+                window.firebaseCollection(
+                    window.firebaseDB,
+                    "templates"
+                )
+            );
+
+
+        templates = [];
+
+
+        snapshot.forEach(
+            docSnapshot => {
+
+                const data =
+                    docSnapshot.data();
+
+
+                templates.push({
+
+                    id:
+                        docSnapshot.id,
+
+                    ...data,
+
+                    categories:
+                        Array.isArray(
+                            data.categories
+                        )
+                            ? data.categories
+                            : [],
+
+                    audience:
+                        Array.isArray(
+                            data.audience
+                        )
+                            ? data.audience
+                            : [],
+
+                    features:
+                        Array.isArray(
+                            data.features
+                        )
+                            ? data.features
+                            : []
+
+                });
+
+            }
+        );
+
+
+        console.log(
+            "Template dari Firebase:",
+            templates
+        );
+
+
+        if (isPublicPage()) {
+
+            renderTemplates();
+
+        }
+
+
+        if (isAdminPage()) {
+
+            renderAdminList();
+
+            updateStats();
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Gagal mengambil template dari Firebase:",
+            error
+        );
+
+
+        if (isPublicPage()) {
+
+            const grid =
+                document.getElementById(
+                    "templateGrid"
+                );
+
+            const empty =
+                document.getElementById(
+                    "emptyState"
+                );
+
+
+            if (grid) {
+
+                grid.innerHTML = `
+
+                    <div
+                        style="
+                            grid-column:1/-1;
+                            text-align:center;
+                            padding:50px 20px;
+                        "
+                    >
+
+                        <h3>
+                            Template gagal dimuat
+                        </h3>
+
+                        <p>
+                            Silakan refresh halaman.
+                        </p>
+
+                    </div>
+
+                `;
+
+            }
+
+
+            if (empty) {
+
+                empty.style.display =
+                    "none";
+
+            }
+
+        }
+
+    }
 
 }
 
 
 /* =====================================================
-   CODE
+   GENERATE TEMPLATE CODE
 ===================================================== */
 
 function generateCode() {
@@ -86,44 +263,944 @@ function generateCode() {
     let highest = 0;
 
 
-    templates.forEach(template => {
+    templates.forEach(
+        template => {
 
-        const number =
-            parseInt(
-                String(template.code)
-                    .replace("EZ", "")
-            );
+            const code =
+                String(
+                    template.code || ""
+                );
 
 
-        if (
-            !isNaN(number) &&
-            number > highest
-        ) {
+            const number =
+                parseInt(
+                    code.replace(
+                        /[^0-9]/g,
+                        ""
+                    )
+                );
 
-            highest = number;
+
+            if (
+                !isNaN(number) &&
+                number > highest
+            ) {
+
+                highest =
+                    number;
+
+            }
 
         }
+    );
 
-    });
 
-
-    return "EZ" +
-        String(highest + 1)
-            .padStart(3, "0");
+    return (
+        "EZ" +
+        String(
+            highest + 1
+        ).padStart(3, "0")
+    );
 
 }
 
 
 /* =====================================================
-   LOGIN
+   THEME
 ===================================================== */
 
-function login() {
+function loadTheme() {
 
-    const password =
+    const saved =
+        localStorage.getItem(
+            "ezmoireTheme"
+        );
+
+
+    if (saved === "dark") {
+
+        document.body.classList.add(
+            "dark"
+        );
+
+    }
+
+
+    updatePublicThemeButton();
+
+    updateAdminThemeButton();
+
+}
+
+
+function updatePublicThemeButton() {
+
+    const button =
+        document.getElementById(
+            "themeBtn"
+        );
+
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    button.textContent =
+        document.body.classList.contains(
+            "dark"
+        )
+            ? "☀"
+            : "☾";
+
+}
+
+
+function updateAdminThemeButton() {
+
+    const button =
+        document.getElementById(
+            "adminThemeBtn"
+        );
+
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    button.textContent =
+        document.body.classList.contains(
+            "dark"
+        )
+            ? "☀"
+            : "☾";
+
+}
+
+
+function toggleTheme() {
+
+    document.body.classList.toggle(
+        "dark"
+    );
+
+
+    const isDark =
+        document.body.classList.contains(
+            "dark"
+        );
+
+
+    localStorage.setItem(
+        "ezmoireTheme",
+        isDark
+            ? "dark"
+            : "light"
+    );
+
+
+    updatePublicThemeButton();
+
+    updateAdminThemeButton();
+
+}
+
+
+/* =====================================================
+   PUBLIC FILTER
+===================================================== */
+
+function setupFilters() {
+
+
+    document
+        .querySelectorAll(
+            ".category-btn"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+
+                        document
+                            .querySelectorAll(
+                                ".category-btn"
+                            )
+                            .forEach(
+                                item =>
+                                    item.classList.remove(
+                                        "active"
+                                    )
+                            );
+
+
+                        button.classList.add(
+                            "active"
+                        );
+
+
+                        currentCategory =
+                            button.dataset.category ||
+                            "all";
+
+
+                        renderTemplates();
+
+                    }
+                );
+
+            }
+        );
+
+
+    document
+        .querySelectorAll(
+            ".who-btn"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+
+                        document
+                            .querySelectorAll(
+                                ".who-btn"
+                            )
+                            .forEach(
+                                item =>
+                                    item.classList.remove(
+                                        "active"
+                                    )
+                            );
+
+
+                        button.classList.add(
+                            "active"
+                        );
+
+
+                        currentAudience =
+                            button.dataset.audience ||
+                            "all";
+
+
+                        renderTemplates();
+
+                    }
+                );
+
+            }
+        );
+
+}
+
+
+/* =====================================================
+   PUBLIC RENDER
+===================================================== */
+
+function renderTemplates() {
+
+    const grid =
+        document.getElementById(
+            "templateGrid"
+        );
+
+
+    const empty =
+        document.getElementById(
+            "emptyState"
+        );
+
+
+    if (!grid) {
+
+        return;
+
+    }
+
+
+    grid.innerHTML = "";
+
+
+    const result =
+        templates.filter(
+            template => {
+
+
+                const categories =
+                    Array.isArray(
+                        template.categories
+                    )
+                        ? template.categories
+                        : [];
+
+
+                const audience =
+                    Array.isArray(
+                        template.audience
+                    )
+                        ? template.audience
+                        : [];
+
+
+                const categoryOkay =
+                    currentCategory === "all"
+                        ? true
+                        : categories.includes(
+                            currentCategory
+                        );
+
+
+                const audienceOkay =
+                    currentAudience === "all"
+                        ? true
+                        : audience.includes(
+                            currentAudience
+                        );
+
+
+                return (
+                    categoryOkay &&
+                    audienceOkay
+                );
+
+            }
+        );
+
+
+    if (result.length === 0) {
+
+        if (empty) {
+
+            empty.style.display =
+                "block";
+
+        }
+
+        return;
+
+    }
+
+
+    if (empty) {
+
+        empty.style.display =
+            "none";
+
+    }
+
+
+    result.forEach(
+        template => {
+
+
+            const card =
+                document.createElement(
+                    "article"
+                );
+
+
+            card.className =
+                "template-card";
+
+
+            const categories =
+                Array.isArray(
+                    template.categories
+                )
+                    ? template.categories
+                    : [];
+
+
+            const tags =
+                categories
+                    .slice(0, 3)
+                    .map(
+                        category => `
+
+                            <span
+                                class="template-tag"
+                            >
+                                ${safe(category)}
+                            </span>
+
+                        `
+                    )
+                    .join("");
+
+
+            const image =
+                template.image ||
+                PLACEHOLDER;
+
+
+            card.innerHTML = `
+
+                <div class="template-cover">
+
+                    <img
+                        src="${safe(image)}"
+                        alt="${safe(template.title)}"
+                    >
+
+                    <span class="template-code">
+                        ${safe(template.code)}
+                    </span>
+
+                </div>
+
+
+                <div class="template-info">
+
+                    <h3>
+                        ${safe(template.title)}
+                    </h3>
+
+
+                    <div class="template-price">
+                        ${rupiah(template.price)}
+                    </div>
+
+
+                    <div class="template-tags">
+                        ${tags}
+                    </div>
+
+
+                    <div class="template-buttons">
+
+                        <button
+                            class="detail-btn"
+                            type="button"
+                        >
+                            Detail
+                        </button>
+
+
+                        <button
+                            class="order-btn"
+                            type="button"
+                        >
+                            Pesan
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `;
+
+
+            const imageElement =
+                card.querySelector(
+                    "img"
+                );
+
+
+            if (imageElement) {
+
+                imageElement.onerror =
+                    () => {
+
+                        imageElement.src =
+                            PLACEHOLDER;
+
+                    };
+
+            }
+
+
+            const detailButton =
+                card.querySelector(
+                    ".detail-btn"
+                );
+
+
+            if (detailButton) {
+
+                detailButton.addEventListener(
+                    "click",
+                    () => {
+
+                        openTemplate(
+                            template.id
+                        );
+
+                    }
+                );
+
+            }
+
+
+            const orderButton =
+                card.querySelector(
+                    ".order-btn"
+                );
+
+
+            if (orderButton) {
+
+                orderButton.addEventListener(
+                    "click",
+                    () => {
+
+                        orderTemplate(
+                            template.id
+                        );
+
+                    }
+                );
+
+            }
+
+
+            grid.appendChild(
+                card
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   DETAIL MODAL
+===================================================== */
+
+function openTemplate(id) {
+
+    const template =
+        templates.find(
+            item =>
+                String(item.id) ===
+                String(id)
+        );
+
+
+    if (!template) {
+
+        return;
+
+    }
+
+
+    const modal =
+        document.getElementById(
+            "detailModal"
+        );
+
+
+    if (!modal) {
+
+        return;
+
+    }
+
+
+    const image =
+        document.getElementById(
+            "detailImage"
+        );
+
+
+    const code =
+        document.getElementById(
+            "detailCode"
+        );
+
+
+    const title =
+        document.getElementById(
+            "detailTitle"
+        );
+
+
+    const price =
+        document.getElementById(
+            "detailPrice"
+        );
+
+
+    const categories =
+        document.getElementById(
+            "detailCategories"
+        );
+
+
+    const audience =
+        document.getElementById(
+            "detailAudience"
+        );
+
+
+    const features =
+        document.getElementById(
+            "detailFeatures"
+        );
+
+
+    const preview =
+        document.getElementById(
+            "previewBtn"
+        );
+
+
+    const whatsapp =
+        document.getElementById(
+            "detailWhatsapp"
+        );
+
+
+    /* IMAGE */
+
+    if (image) {
+
+        image.src =
+            template.image ||
+            PLACEHOLDER;
+
+        image.alt =
+            template.title || "";
+
+        image.onerror =
+            () => {
+
+                image.src =
+                    PLACEHOLDER;
+
+            };
+
+    }
+
+
+    /* BASIC INFO */
+
+    if (code) {
+
+        code.textContent =
+            template.code || "";
+
+    }
+
+
+    if (title) {
+
+        title.textContent =
+            template.title || "";
+
+    }
+
+
+    if (price) {
+
+        price.textContent =
+            rupiah(template.price);
+
+    }
+
+
+    /* CATEGORIES */
+
+    if (categories) {
+
+        categories.innerHTML =
+            (
+                Array.isArray(
+                    template.categories
+                )
+                    ? template.categories
+                    : []
+            )
+            .map(
+                item => `
+
+                    <span>
+                        ${safe(item)}
+                    </span>
+
+                `
+            )
+            .join("");
+
+    }
+
+
+    /* AUDIENCE */
+
+    if (audience) {
+
+        audience.innerHTML =
+            (
+                Array.isArray(
+                    template.audience
+                )
+                    ? template.audience
+                    : []
+            )
+            .map(
+                item => `
+
+                    <span>
+                        ${safe(item)}
+                    </span>
+
+                `
+            )
+            .join("");
+
+    }
+
+
+    /* FEATURES */
+
+    if (features) {
+
+        const featureList =
+            Array.isArray(
+                template.features
+            )
+                ? template.features
+                : [];
+
+
+        features.innerHTML =
+            featureList.length
+                ?
+
+                featureList
+                    .map(
+                        item => `
+
+                            <div>
+                                ${safe(item)}
+                            </div>
+
+                        `
+                    )
+                    .join("")
+
+                :
+
+                "<div>Belum ada fitur khusus.</div>";
+
+    }
+
+
+    /* PREVIEW */
+
+    if (preview) {
+
+        preview.onclick = null;
+
+
+        if (template.link) {
+
+            preview.href =
+                template.link;
+
+            preview.target =
+                "_blank";
+
+            preview.rel =
+                "noopener noreferrer";
+
+        } else {
+
+            preview.href =
+                "#";
+
+
+            preview.onclick =
+                event => {
+
+                    event.preventDefault();
+
+                    alert(
+                        "Preview website belum ditambahkan."
+                    );
+
+                };
+
+        }
+
+    }
+
+
+    /* WHATSAPP */
+
+    if (whatsapp) {
+
+        whatsapp.onclick =
+            () => {
+
+                orderTemplate(
+                    template.id
+                );
+
+            };
+
+    }
+
+
+    modal.classList.add(
+        "show"
+    );
+
+}
+
+
+/* =====================================================
+   WHATSAPP
+===================================================== */
+
+function orderTemplate(id) {
+
+    const template =
+        templates.find(
+            item =>
+                String(item.id) ===
+                String(id)
+        );
+
+
+    if (!template) {
+
+        return;
+
+    }
+
+
+    const message =
+        `Halo Ezmoire, saya tertarik dengan template "${template.title}" (${template.code}). Apakah saya bisa memesan template ini?`;
+
+
+    const url =
+        `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(message)}`;
+
+
+    window.open(
+        url,
+        "_blank"
+    );
+
+}
+
+
+/* =====================================================
+   MODAL CLOSE
+===================================================== */
+
+function setupModalClose() {
+
+    const modal =
+        document.getElementById(
+            "detailModal"
+        );
+
+
+    const close =
+        document.getElementById(
+            "detailClose"
+        );
+
+
+    if (close) {
+
+        close.addEventListener(
+            "click",
+            () => {
+
+                if (modal) {
+
+                    modal.classList.remove(
+                        "show"
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+
+    if (modal) {
+
+        modal.addEventListener(
+            "click",
+            event => {
+
+                if (
+                    event.target ===
+                    modal
+                ) {
+
+                    modal.classList.remove(
+                        "show"
+                    );
+
+                }
+
+            }
+        );
+
+    }
+
+
+    document.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key ===
+                "Escape"
+            ) {
+
+                if (modal) {
+
+                    modal.classList.remove(
+                        "show"
+                    );
+
+                }
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   ADMIN LOGIN
+===================================================== */
+
+async function loginAdmin() {
+
+    const emailInput =
+        document.getElementById(
+            "adminEmail"
+        );
+
+
+    const passwordInput =
         document.getElementById(
             "adminPassword"
-        ).value;
+        );
 
 
     const error =
@@ -132,82 +1209,306 @@ function login() {
         );
 
 
-    if (password !== ADMIN_PASSWORD) {
+    const loginButton =
+        document.getElementById(
+            "loginBtn"
+        );
 
-        error.textContent =
-            "Password salah.";
+
+    if (
+        !emailInput ||
+        !passwordInput
+    ) {
+
+        console.error(
+            "Input login tidak ditemukan."
+        );
 
         return;
 
     }
 
 
-    sessionStorage.setItem(
-        "ezmoireAdmin",
-        "true"
-    );
+    const email =
+        emailInput.value.trim();
 
 
-    showDashboard();
-
-}
-
-
-function showDashboard() {
-
-    document
-        .getElementById("loginScreen")
-        .classList.add("hidden");
+    const password =
+        passwordInput.value;
 
 
-    document
-        .getElementById("adminDashboard")
-        .classList.remove("hidden");
+    if (
+        !email ||
+        !password
+    ) {
+
+        if (error) {
+
+            error.textContent =
+                "Email dan password wajib diisi.";
+
+        }
+
+        return;
+
+    }
 
 
-    loadTemplates();
+    if (
+        !window.firebaseAuth ||
+        !window.firebaseSignIn
+    ) {
 
-    renderAdminList();
+        if (error) {
 
-    updateStats();
+            error.textContent =
+                "Firebase Authentication belum siap.";
+
+        }
+
+        return;
+
+    }
+
+
+    try {
+
+        if (error) {
+
+            error.textContent =
+                "";
+
+        }
+
+
+        if (loginButton) {
+
+            loginButton.disabled =
+                true;
+
+            loginButton.textContent =
+                "Logging in...";
+
+        }
+
+
+        await window.firebaseSignIn(
+            window.firebaseAuth,
+            email,
+            password
+        );
+
+
+        console.log(
+            "Login Firebase berhasil."
+        );
+
+
+    } catch (firebaseError) {
+
+        console.error(
+            "Login Firebase gagal:",
+            firebaseError
+        );
+
+
+        if (error) {
+
+            switch (
+                firebaseError.code
+            ) {
+
+                case "auth/invalid-credential":
+
+                case "auth/wrong-password":
+
+                case "auth/user-not-found":
+
+                    error.textContent =
+                        "Email atau password salah.";
+
+                    break;
+
+
+                case "auth/invalid-email":
+
+                    error.textContent =
+                        "Format email tidak valid.";
+
+                    break;
+
+
+                case "auth/user-disabled":
+
+                    error.textContent =
+                        "Akun admin dinonaktifkan.";
+
+                    break;
+
+
+                case "auth/too-many-requests":
+
+                    error.textContent =
+                        "Terlalu banyak percobaan. Coba lagi nanti.";
+
+                    break;
+
+
+                default:
+
+                    error.textContent =
+                        "Login gagal. Periksa email dan password.";
+
+            }
+
+        }
+
+    }
+
+
+    if (loginButton) {
+
+        loginButton.disabled =
+            false;
+
+        loginButton.textContent =
+            "Login";
+
+    }
 
 }
 
 
 /* =====================================================
-   IMAGE TO DATA URL
+   SHOW LOGIN
 ===================================================== */
 
-function imageToDataURL(file) {
+function showLogin() {
 
-    return new Promise(
-        (resolve, reject) => {
+    const loginScreen =
+        document.getElementById(
+            "loginScreen"
+        );
 
-            const reader =
-                new FileReader();
+
+    const dashboard =
+        document.getElementById(
+            "adminDashboard"
+        );
 
 
-            reader.onload = () => {
+    if (loginScreen) {
 
-                resolve(
-                    reader.result
+        loginScreen.classList.remove(
+            "hidden"
+        );
+
+    }
+
+
+    if (dashboard) {
+
+        dashboard.classList.add(
+            "hidden"
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   SHOW DASHBOARD
+===================================================== */
+
+async function showDashboard() {
+
+    const loginScreen =
+        document.getElementById(
+            "loginScreen"
+        );
+
+
+    const dashboard =
+        document.getElementById(
+            "adminDashboard"
+        );
+
+
+    if (loginScreen) {
+
+        loginScreen.classList.add(
+            "hidden"
+        );
+
+    }
+
+
+    if (dashboard) {
+
+        dashboard.classList.remove(
+            "hidden"
+        );
+
+    }
+
+
+    await loadTemplates();
+
+}
+
+
+/* =====================================================
+   AUTH STATE
+===================================================== */
+
+function setupAuth() {
+
+    if (
+        !window.firebaseOnAuthStateChanged ||
+        !window.firebaseAuth
+    ) {
+
+        console.error(
+            "Firebase Authentication belum siap."
+        );
+
+
+        showLogin();
+
+        return;
+
+    }
+
+
+    window.firebaseOnAuthStateChanged(
+        window.firebaseAuth,
+        async user => {
+
+            currentUser =
+                user;
+
+
+            if (user) {
+
+                console.log(
+                    "Admin login:",
+                    user.email
                 );
 
-            };
 
+                await showDashboard();
 
-            reader.onerror = () => {
+            } else {
 
-                reject(
-                    new Error(
-                        "Gagal membaca gambar."
-                    )
+                console.log(
+                    "Admin belum login."
                 );
 
-            };
 
+                showLogin();
 
-            reader.readAsDataURL(file);
+            }
 
         }
     );
@@ -216,7 +1517,7 @@ function imageToDataURL(file) {
 
 
 /* =====================================================
-   IMAGE PREVIEW
+   IMAGE UPLOAD PREVIEW
 ===================================================== */
 
 function setupImageUpload() {
@@ -233,6 +1534,16 @@ function setupImageUpload() {
         );
 
 
+    if (
+        !input ||
+        !preview
+    ) {
+
+        return;
+
+    }
+
+
     input.addEventListener(
         "change",
         () => {
@@ -241,20 +1552,30 @@ function setupImageUpload() {
                 input.files[0];
 
 
-            preview.innerHTML = "";
+            preview.innerHTML =
+                "";
+
 
             preview.classList.remove(
                 "show"
             );
 
 
-            if (!file) return;
+            if (!file) {
+
+                return;
+
+            }
 
 
             const allowed = [
+
                 "image/jpeg",
+
                 "image/png",
+
                 "image/webp"
+
             ];
 
 
@@ -268,7 +1589,9 @@ function setupImageUpload() {
                     "Gunakan JPG, PNG, atau WEBP."
                 );
 
-                input.value = "";
+
+                input.value =
+                    "";
 
                 return;
 
@@ -284,7 +1607,9 @@ function setupImageUpload() {
                     "Ukuran gambar maksimal 5 MB."
                 );
 
-                input.value = "";
+
+                input.value =
+                    "";
 
                 return;
 
@@ -315,7 +1640,9 @@ function setupImageUpload() {
                 };
 
 
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(
+                file
+            );
 
         }
     );
@@ -329,30 +1656,33 @@ function setupImageUpload() {
 
 async function addTemplate() {
 
-    const title =
-        document
-            .getElementById(
-                "templateTitle"
-            )
-            .value
-            .trim();
+    if (!currentUser) {
+
+        alert(
+            "Silakan login terlebih dahulu."
+        );
+
+        return;
+
+    }
 
 
-    const price =
-        document
-            .getElementById(
-                "templatePrice"
-            )
-            .value;
+    const titleInput =
+        document.getElementById(
+            "templateTitle"
+        );
 
 
-    const link =
-        document
-            .getElementById(
-                "templateLink"
-            )
-            .value
-            .trim();
+    const priceInput =
+        document.getElementById(
+            "templatePrice"
+        );
+
+
+    const linkInput =
+        document.getElementById(
+            "templateLink"
+        );
 
 
     const imageInput =
@@ -361,13 +1691,47 @@ async function addTemplate() {
         );
 
 
+    const button =
+        document.getElementById(
+            "addTemplateBtn"
+        );
+
+
+    if (
+        !titleInput ||
+        !priceInput ||
+        !linkInput ||
+        !imageInput
+    ) {
+
+        console.error(
+            "Form template tidak lengkap."
+        );
+
+        return;
+
+    }
+
+
+    const title =
+        titleInput.value.trim();
+
+
+    const price =
+        priceInput.value;
+
+
+    const link =
+        linkInput.value.trim();
+
+
     const imageFile =
         imageInput.files[0];
 
 
     if (
         !title ||
-        !price ||
+        price === "" ||
         !imageFile
     ) {
 
@@ -380,40 +1744,45 @@ async function addTemplate() {
     }
 
 
-    const categories =
-        [
-            ...document.querySelectorAll(
-                ".category-check:checked"
-            )
-        ]
-        .map(
-            input => input.value
-        );
+    const categories = [
+
+        ...document.querySelectorAll(
+            ".category-check:checked"
+        )
+
+    ].map(
+        input =>
+            input.value
+    );
 
 
-    const audience =
-        [
-            ...document.querySelectorAll(
-                ".audience-check:checked"
-            )
-        ]
-        .map(
-            input => input.value
-        );
+    const audience = [
+
+        ...document.querySelectorAll(
+            ".audience-check:checked"
+        )
+
+    ].map(
+        input =>
+            input.value
+    );
 
 
-    const features =
-        [
-            ...document.querySelectorAll(
-                ".feature-check:checked"
-            )
-        ]
-        .map(
-            input => input.value
-        );
+    const features = [
+
+        ...document.querySelectorAll(
+            ".feature-check:checked"
+        )
+
+    ].map(
+        input =>
+            input.value
+    );
 
 
-    if (!categories.length) {
+    if (
+        !categories.length
+    ) {
 
         alert(
             "Pilih minimal satu kategori."
@@ -424,7 +1793,9 @@ async function addTemplate() {
     }
 
 
-    if (!audience.length) {
+    if (
+        !audience.length
+    ) {
 
         alert(
             "Pilih minimal satu pilihan Who is it for?"
@@ -435,33 +1806,98 @@ async function addTemplate() {
     }
 
 
-    const button =
-        document.getElementById(
-            "addTemplateBtn"
+    if (
+        !window.firebaseStorageRef ||
+        !window.firebaseUploadBytes ||
+        !window.firebaseGetDownloadURL
+    ) {
+
+        alert(
+            "Firebase Storage belum siap."
         );
 
+        return;
 
-    button.disabled = true;
+    }
 
-    button.innerHTML =
-        "Saving...";
+
+    if (
+        !window.firebaseSetDoc ||
+        !window.firebaseDoc
+    ) {
+
+        alert(
+            "Firestore belum siap."
+        );
+
+        return;
+
+    }
+
+
+    if (button) {
+
+        button.disabled =
+            true;
+
+        button.innerHTML =
+            "Uploading...";
+
+    }
 
 
     try {
 
-        const image =
-            await imageToDataURL(
-                imageFile
+        /* CODE */
+
+        const code =
+            generateCode();
+
+
+        /* EXTENSION */
+
+        const extension =
+            imageFile.name
+                .split(".")
+                .pop()
+                .toLowerCase();
+
+
+        /* STORAGE PATH */
+
+        const filePath =
+            `templates/${code}.${extension}`;
+
+
+        const storageRef =
+            window.firebaseStorageRef(
+                window.firebaseStorage,
+                filePath
             );
 
 
+        /* UPLOAD */
+
+        await window.firebaseUploadBytes(
+            storageRef,
+            imageFile
+        );
+
+
+        /* DOWNLOAD URL */
+
+        const imageURL =
+            await window.firebaseGetDownloadURL(
+                storageRef
+            );
+
+
+        /* DATA */
+
         const template = {
 
-            id:
-                Date.now().toString(),
-
             code:
-                generateCode(),
+                code,
 
             title:
                 title,
@@ -470,7 +1906,7 @@ async function addTemplate() {
                 Number(price),
 
             image:
-                image,
+                imageURL,
 
             link:
                 link,
@@ -485,19 +1921,44 @@ async function addTemplate() {
                 features,
 
             createdAt:
-                new Date().toISOString()
+                new Date().toISOString(),
+
+            createdBy:
+                currentUser.uid
 
         };
 
 
-        templates.push(
+        /* FIRESTORE */
+
+        await window.firebaseSetDoc(
+            window.firebaseDoc(
+                window.firebaseDB,
+                "templates",
+                code
+            ),
             template
         );
 
 
-        saveTemplates();
+        /* LOCAL */
+
+        templates.push({
+
+            id:
+                code,
+
+            ...template
+
+        });
+
+
+        /* CLEAR */
 
         clearForm();
+
+
+        /* REFRESH UI */
 
         renderAdminList();
 
@@ -505,23 +1966,34 @@ async function addTemplate() {
 
 
         alert(
-            `${template.code} berhasil ditambahkan.`
+            `${code} berhasil ditambahkan ke Firebase.`
         );
 
 
-    } catch {
+    } catch (error) {
+
+        console.error(
+            "Gagal menambahkan template:",
+            error
+        );
+
 
         alert(
-            "Gagal menyimpan gambar."
+            "Gagal menyimpan template. Lihat Console untuk detail error."
         );
 
     }
 
 
-    button.disabled = false;
+    if (button) {
 
-    button.innerHTML =
-        "Add Template <span>+</span>";
+        button.disabled =
+            false;
+
+        button.innerHTML =
+            "Add Template <span>+</span>";
+
+    }
 
 }
 
@@ -532,35 +2004,74 @@ async function addTemplate() {
 
 function clearForm() {
 
-    document.getElementById(
-        "templateTitle"
-    ).value = "";
+    const title =
+        document.getElementById(
+            "templateTitle"
+        );
 
 
-    document.getElementById(
-        "templatePrice"
-    ).value = "";
+    const price =
+        document.getElementById(
+            "templatePrice"
+        );
 
 
-    document.getElementById(
-        "templateLink"
-    ).value = "";
+    const link =
+        document.getElementById(
+            "templateLink"
+        );
 
 
-    document.getElementById(
-        "templateImage"
-    ).value = "";
+    const image =
+        document.getElementById(
+            "templateImage"
+        );
+
+
+    if (title) {
+
+        title.value =
+            "";
+
+    }
+
+
+    if (price) {
+
+        price.value =
+            "";
+
+    }
+
+
+    if (link) {
+
+        link.value =
+            "";
+
+    }
+
+
+    if (image) {
+
+        image.value =
+            "";
+
+    }
 
 
     document
         .querySelectorAll(
             ".category-check, .audience-check, .feature-check"
         )
-        .forEach(input => {
+        .forEach(
+            input => {
 
-            input.checked = false;
+                input.checked =
+                    false;
 
-        });
+            }
+        );
 
 
     const preview =
@@ -569,17 +2080,22 @@ function clearForm() {
         );
 
 
-    preview.innerHTML = "";
+    if (preview) {
 
-    preview.classList.remove(
-        "show"
-    );
+        preview.innerHTML =
+            "";
+
+        preview.classList.remove(
+            "show"
+        );
+
+    }
 
 }
 
 
 /* =====================================================
-   RENDER ADMIN LIST
+   ADMIN LIST
 ===================================================== */
 
 function renderAdminList() {
@@ -590,15 +2106,27 @@ function renderAdminList() {
         );
 
 
-    container.innerHTML = "";
+    if (!container) {
+
+        return;
+
+    }
 
 
-    if (!templates.length) {
+    container.innerHTML =
+        "";
+
+
+    if (
+        templates.length === 0
+    ) {
 
         container.innerHTML = `
 
-            <div class="empty-state"
-                 style="display:block;padding:45px 10px">
+            <div
+                class="empty-state"
+                style="display:block;padding:45px 10px"
+            >
 
                 <div class="empty-symbol">
                     +
@@ -621,11 +2149,31 @@ function renderAdminList() {
     }
 
 
-    [
-        ...templates
-    ]
-        .reverse()
-        .forEach(template => {
+    const list =
+        [...templates].sort(
+            (a, b) => {
+
+                const dateA =
+                    new Date(
+                        a.createdAt || 0
+                    );
+
+
+                const dateB =
+                    new Date(
+                        b.createdAt || 0
+                    );
+
+
+                return dateB - dateA;
+
+            }
+        );
+
+
+    list.forEach(
+        template => {
+
 
             const item =
                 document.createElement(
@@ -638,29 +2186,43 @@ function renderAdminList() {
 
 
             const tags =
-                (template.categories || [])
-                    .slice(0, 3)
-                    .map(category => `
+                (
+                    Array.isArray(
+                        template.categories
+                    )
+                        ? template.categories
+                        : []
+                )
+                .slice(0, 3)
+                .map(
+                    category => `
+
                         <span>
                             ${safe(category)}
                         </span>
-                    `)
-                    .join("");
+
+                    `
+                )
+                .join("");
+
+
+            const image =
+                template.image ||
+                ADMIN_PLACEHOLDER;
 
 
             item.innerHTML = `
 
                 <img
                     class="admin-thumb"
-                    src="${safe(template.image)}"
+                    src="${safe(image)}"
                     alt=""
-                    onerror="
-                        this.src='https://placehold.co/100x120/15181e/ffffff?text=E'
-                    "
                 >
 
 
-                <div class="admin-template-info">
+                <div
+                    class="admin-template-info"
+                >
 
                     <strong>
                         ${safe(template.title)}
@@ -673,26 +2235,30 @@ function renderAdminList() {
                     </span>
 
 
-                    <div class="admin-template-tags">
+                    <div
+                        class="admin-template-tags"
+                    >
                         ${tags}
                     </div>
 
                 </div>
 
 
-                <div class="admin-item-actions">
+                <div
+                    class="admin-item-actions"
+                >
 
                     <button
                         type="button"
-                        onclick="previewTemplate('${template.id}')"
+                        class="admin-preview-btn"
                     >
                         Preview
                     </button>
 
+
                     <button
                         type="button"
-                        class="delete"
-                        onclick="deleteTemplate('${template.id}')"
+                        class="delete admin-delete-btn"
                     >
                         Delete
                     </button>
@@ -702,28 +2268,98 @@ function renderAdminList() {
             `;
 
 
+            const imageElement =
+                item.querySelector(
+                    ".admin-thumb"
+                );
+
+
+            if (imageElement) {
+
+                imageElement.onerror =
+                    () => {
+
+                        imageElement.src =
+                            ADMIN_PLACEHOLDER;
+
+                    };
+
+            }
+
+
+            const previewButton =
+                item.querySelector(
+                    ".admin-preview-btn"
+                );
+
+
+            if (previewButton) {
+
+                previewButton.addEventListener(
+                    "click",
+                    () => {
+
+                        previewTemplate(
+                            template.id
+                        );
+
+                    }
+                );
+
+            }
+
+
+            const deleteButton =
+                item.querySelector(
+                    ".admin-delete-btn"
+                );
+
+
+            if (deleteButton) {
+
+                deleteButton.addEventListener(
+                    "click",
+                    () => {
+
+                        deleteTemplate(
+                            template.id
+                        );
+
+                    }
+                );
+
+            }
+
+
             container.appendChild(
                 item
             );
 
-        });
+        }
+    );
 
 }
 
 
 /* =====================================================
-   PREVIEW
+   ADMIN PREVIEW
 ===================================================== */
 
 function previewTemplate(id) {
 
     const template =
         templates.find(
-            item => item.id === id
+            item =>
+                String(item.id) ===
+                String(id)
         );
 
 
-    if (!template) return;
+    if (!template) {
+
+        return;
+
+    }
 
 
     if (!template.link) {
@@ -746,136 +2382,191 @@ function previewTemplate(id) {
 
 
 /* =====================================================
-   DELETE
+   ADMIN DELETE
 ===================================================== */
 
-function deleteTemplate(id) {
+async function deleteTemplate(id) {
+
+    if (!currentUser) {
+
+        alert(
+            "Silakan login terlebih dahulu."
+        );
+
+        return;
+
+    }
+
 
     const template =
         templates.find(
-            item => item.id === id
+            item =>
+                String(item.id) ===
+                String(id)
         );
 
 
-    if (!template) return;
+    if (!template) {
+
+        return;
+
+    }
 
 
-    const confirmDelete =
+    const confirmed =
         confirm(
             `Hapus template "${template.title}"?`
         );
 
 
-    if (!confirmDelete) return;
+    if (!confirmed) {
 
-
-    templates =
-        templates.filter(
-            item => item.id !== id
-        );
-
-
-    saveTemplates();
-
-    renderAdminList();
-
-    updateStats();
-
-}
-
-
-/* =====================================================
-   STATS
-===================================================== */
-
-function updateStats() {
-
-    document.getElementById(
-        "templateCount"
-    ).textContent =
-        templates.length;
-
-
-    document.getElementById(
-        "nextCode"
-    ).textContent =
-        generateCode();
-
-}
-
-
-/* =====================================================
-   THEME
-===================================================== */
-
-function loadTheme() {
-
-    const theme =
-        localStorage.getItem(
-            "ezmoireTheme"
-        );
-
-
-    if (theme === "dark") {
-
-        document.body.classList.add(
-            "dark"
-        );
+        return;
 
     }
 
 
-    updateThemeButton();
+    try {
 
-}
+        /* FIRESTORE */
 
-
-function updateThemeButton() {
-
-    const button =
-        document.getElementById(
-            "adminThemeBtn"
+        await window.firebaseDeleteDoc(
+            window.firebaseDoc(
+                window.firebaseDB,
+                "templates",
+                String(template.id)
+            )
         );
 
 
-    if (!button) return;
+        /* STORAGE */
+
+        if (
+            template.image &&
+            window.firebaseDeleteObject
+        ) {
+
+            try {
+
+                let extension =
+                    "jpg";
 
 
-    button.textContent =
-        document.body.classList.contains(
-            "dark"
-        )
-            ? "☀"
-            : "☾";
-
-}
+                const match =
+                    String(
+                        template.image
+                    ).match(
+                        /\.(jpg|jpeg|png|webp)(?:\?|$)/i
+                    );
 
 
-function toggleTheme() {
+                if (match) {
 
-    document.body.classList.toggle(
-        "dark"
-    );
+                    extension =
+                        match[1];
 
-
-    localStorage.setItem(
-        "ezmoireTheme",
-
-        document.body.classList.contains(
-            "dark"
-        )
-            ? "dark"
-            : "light"
-    );
+                }
 
 
-    updateThemeButton();
+                const imageRef =
+                    window.firebaseStorageRef(
+                        window.firebaseStorage,
+                        `templates/${template.code}.${extension}`
+                    );
+
+
+                await window.firebaseDeleteObject(
+                    imageRef
+                );
+
+
+            } catch (storageError) {
+
+                console.warn(
+                    "Gambar Storage tidak berhasil dihapus:",
+                    storageError
+                );
+
+            }
+
+        }
+
+
+        /* LOCAL ARRAY */
+
+        templates =
+            templates.filter(
+                item =>
+                    String(item.id) !==
+                    String(id)
+            );
+
+
+        renderAdminList();
+
+        updateStats();
+
+
+        alert(
+            "Template berhasil dihapus."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Gagal menghapus template:",
+            error
+        );
+
+
+        alert(
+            "Gagal menghapus template. Lihat Console."
+        );
+
+    }
 
 }
 
 
 /* =====================================================
-   SIDEBAR
+   ADMIN STATS
+===================================================== */
+
+function updateStats() {
+
+    const count =
+        document.getElementById(
+            "templateCount"
+        );
+
+
+    const next =
+        document.getElementById(
+            "nextCode"
+        );
+
+
+    if (count) {
+
+        count.textContent =
+            templates.length;
+
+    }
+
+
+    if (next) {
+
+        next.textContent =
+            generateCode();
+
+    }
+
+}
+
+
+/* =====================================================
+   ADMIN SIDEBAR
 ===================================================== */
 
 function setupSidebar() {
@@ -886,138 +2577,390 @@ function setupSidebar() {
         );
 
 
-    buttons.forEach(button => {
+    buttons.forEach(
+        button => {
 
-        button.addEventListener(
-            "click",
-            () => {
-
-                buttons.forEach(
-                    item =>
-                        item.classList.remove(
-                            "active"
-                        )
-                );
-
-
-                button.classList.add(
-                    "active"
-                );
-
-
-                const section =
-                    button.dataset.section;
-
-
-                if (
-                    section === "add"
-                ) {
-
-                    document
-                        .getElementById(
-                            "addSection"
-                        )
-                        .scrollIntoView({
-                            behavior: "smooth"
-                        });
-
-                }
-
-
-                if (
-                    section === "templates"
-                ) {
-
-                    document
-                        .getElementById(
-                            "templatesSection"
-                        )
-                        .scrollIntoView({
-                            behavior: "smooth"
-                        });
-
-                }
-
-            }
-        );
-
-    });
-
-}
-
-
-/* =====================================================
-   INIT
-===================================================== */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        loadTheme();
-
-        const loggedIn =
-            sessionStorage.getItem(
-                "ezmoireAdmin"
-            );
-
-
-        if (loggedIn === "true") {
-
-            showDashboard();
-
-        }
-
-
-        document
-            .getElementById("loginBtn")
-            .addEventListener(
+            button.addEventListener(
                 "click",
-                login
-            );
+                () => {
 
 
-        document
-            .getElementById("adminPassword")
-            .addEventListener(
-                "keydown",
-                event => {
+                    buttons.forEach(
+                        item =>
+                            item.classList.remove(
+                                "active"
+                            )
+                    );
+
+
+                    button.classList.add(
+                        "active"
+                    );
+
+
+                    const section =
+                        button.dataset.section;
+
 
                     if (
-                        event.key === "Enter"
+                        section ===
+                        "add"
                     ) {
 
-                        login();
+                        const element =
+                            document.getElementById(
+                                "addSection"
+                            );
+
+
+                        if (element) {
+
+                            element.scrollIntoView({
+                                behavior:
+                                    "smooth"
+                            });
+
+                        }
+
+                    }
+
+
+                    if (
+                        section ===
+                        "templates"
+                    ) {
+
+                        const element =
+                            document.getElementById(
+                                "templatesSection"
+                            );
+
+
+                        if (element) {
+
+                            element.scrollIntoView({
+                                behavior:
+                                    "smooth"
+                            });
+
+                        }
 
                     }
 
                 }
             );
 
+        }
+    );
 
-        document
-            .getElementById(
-                "addTemplateBtn"
-            )
-            .addEventListener(
-                "click",
-                addTemplate
-            );
+}
 
 
-        document
-            .getElementById(
-                "adminThemeBtn"
-            )
-            .addEventListener(
-                "click",
-                toggleTheme
-            );
+/* =====================================================
+   ADMIN THEME
+===================================================== */
+
+function setupAdminTheme() {
+
+    const button =
+        document.getElementById(
+            "adminThemeBtn"
+        );
 
 
-        setupImageUpload();
+    if (!button) {
 
-        setupSidebar();
+        return;
+
+    }
+
+
+    button.addEventListener(
+        "click",
+        toggleTheme
+    );
+
+}
+
+
+/* =====================================================
+   PUBLIC THEME
+===================================================== */
+
+function setupPublicTheme() {
+
+    const button =
+        document.getElementById(
+            "themeBtn"
+        );
+
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    button.addEventListener(
+        "click",
+        toggleTheme
+    );
+
+}
+
+
+/* =====================================================
+   LOGIN EVENTS
+===================================================== */
+
+function setupLoginEvents() {
+
+    const loginButton =
+        document.getElementById(
+            "loginBtn"
+        );
+
+
+    if (loginButton) {
+
+        loginButton.addEventListener(
+            "click",
+            loginAdmin
+        );
+
+    }
+
+
+    const passwordInput =
+        document.getElementById(
+            "adminPassword"
+        );
+
+
+    if (passwordInput) {
+
+        passwordInput.addEventListener(
+            "keydown",
+            event => {
+
+                if (
+                    event.key ===
+                    "Enter"
+                ) {
+
+                    loginAdmin();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    const emailInput =
+        document.getElementById(
+            "adminEmail"
+        );
+
+
+    if (emailInput) {
+
+        emailInput.addEventListener(
+            "keydown",
+            event => {
+
+                if (
+                    event.key ===
+                    "Enter"
+                ) {
+
+                    loginAdmin();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    const logoutButton =
+        document.getElementById(
+            "logoutBtn"
+        );
+
+
+    if (logoutButton) {
+
+        logoutButton.addEventListener(
+            "click",
+            logout
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+async function logout() {
+
+    if (
+        !window.firebaseSignOut ||
+        !window.firebaseAuth
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        await window.firebaseSignOut(
+            window.firebaseAuth
+        );
+
+
+        currentUser =
+            null;
+
+
+    } catch (error) {
+
+        console.error(
+            "Logout gagal:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   ADMIN ADD EVENT
+===================================================== */
+
+function setupAdminEvents() {
+
+    const addButton =
+        document.getElementById(
+            "addTemplateBtn"
+        );
+
+
+    if (addButton) {
+
+        addButton.addEventListener(
+            "click",
+            addTemplate
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   INIT PUBLIC
+===================================================== */
+
+async function initPublic() {
+
+    loadTheme();
+
+    setupPublicTheme();
+
+    setupFilters();
+
+    setupModalClose();
+
+    await loadTemplates();
+
+}
+
+
+/* =====================================================
+   INIT ADMIN
+===================================================== */
+
+function initAdmin() {
+
+    loadTheme();
+
+    setupAdminTheme();
+
+    setupLoginEvents();
+
+    setupImageUpload();
+
+    setupSidebar();
+
+    setupAdminEvents();
+
+    setupAuth();
+
+}
+
+
+/* =====================================================
+   WAIT FOR DOM
+===================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        if (isAdminPage()) {
+
+            initAdmin();
+
+        } else {
+
+            initPublic();
+
+        }
 
     }
 );
+
+
+/* =====================================================
+   GLOBAL FUNCTIONS
+===================================================== */
+
+window.openTemplate =
+    openTemplate;
+
+window.orderTemplate =
+    orderTemplate;
+
+window.login =
+    loginAdmin;
+
+window.loginAdmin =
+    loginAdmin;
+
+window.logout =
+    logout;
+
+window.addTemplate =
+    addTemplate;
+
+window.previewTemplate =
+    previewTemplate;
+
+window.deleteTemplate =
+    deleteTemplate;
+
+window.toggleTheme =
+    toggleTheme;
+
+window.clearForm =
+    clearForm;
