@@ -1,8 +1,7 @@
 /* =====================================================
-   EZMOIRE
-   SINGLE SCRIPT
-   PUBLIC + ADMIN + FIREBASE
-   FINAL
+   EZMOIRE — ADMIN PANEL
+   FIREBASE AUTH + FIRESTORE
+   STORAGE TIDAK DIGUNAKAN
 ===================================================== */
 
 
@@ -10,23 +9,52 @@
    CONFIG
 ===================================================== */
 
-const WHATSAPP = "6288216358530";
+const ADMIN_EMAIL = "ezharafwanjamil@gmail.com";
 
-const PLACEHOLDER =
-    "https://placehold.co/800x1000/15181e/ffffff?text=Ezmoire";
-
-const ADMIN_PLACEHOLDER =
-    "https://placehold.co/100x120/15181e/ffffff?text=E";
+let templates = [];
+let currentUser = null;
 
 
 /* =====================================================
-   DATA
+   FIREBASE READY
 ===================================================== */
 
-let templates = [];
-let currentCategory = "all";
-let currentAudience = "all";
-let currentUser = null;
+function waitForFirebase(callback) {
+
+    if (window.firebaseReady) {
+        callback();
+        return;
+    }
+
+    const check = setInterval(() => {
+
+        if (window.firebaseReady) {
+
+            clearInterval(check);
+
+            callback();
+        }
+
+    }, 100);
+
+}
+
+
+/* =====================================================
+   GET FIREBASE
+===================================================== */
+
+function getDB() {
+
+    return window.firebaseDB;
+
+}
+
+function getAuth() {
+
+    return window.firebaseAuth;
+
+}
 
 
 /* =====================================================
@@ -34,11 +62,16 @@ let currentUser = null;
 ===================================================== */
 
 function rupiah(value) {
-    return new Intl.NumberFormat("id-ID", {
-        style: "currency",
-        currency: "IDR",
-        maximumFractionDigits: 0
-    }).format(Number(value) || 0);
+
+    return new Intl.NumberFormat(
+        "id-ID",
+        {
+            style: "currency",
+            currency: "IDR",
+            maximumFractionDigits: 0
+        }
+    ).format(Number(value) || 0);
+
 }
 
 
@@ -47,176 +80,15 @@ function rupiah(value) {
 ===================================================== */
 
 function safe(value) {
-    const div = document.createElement("div");
 
-    div.textContent = value ?? "";
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        value ?? "";
 
     return div.innerHTML;
-}
 
-
-/* =====================================================
-   PAGE CHECK
-===================================================== */
-
-function isAdminPage() {
-    return !!document.getElementById("adminDashboard");
-}
-
-function isPublicPage() {
-    return !!document.getElementById("templateGrid");
-}
-
-
-/* =====================================================
-   FIREBASE CHECK
-===================================================== */
-
-function firebaseIsReady() {
-    return (
-        window.firebaseReady === true &&
-        window.firebaseDB &&
-        window.firebaseCollection &&
-        window.firebaseGetDocs
-    );
-}
-
-
-/* =====================================================
-   WAIT FOR FIREBASE
-===================================================== */
-
-function waitForFirebase(timeout = 10000) {
-    return new Promise((resolve, reject) => {
-        if (firebaseIsReady()) {
-            resolve();
-            return;
-        }
-
-        const start = Date.now();
-
-        const timer = setInterval(() => {
-            if (firebaseIsReady()) {
-                clearInterval(timer);
-                resolve();
-                return;
-            }
-
-            if (Date.now() - start >= timeout) {
-                clearInterval(timer);
-
-                reject(
-                    new Error(
-                        "Firebase tidak siap dalam waktu yang ditentukan."
-                    )
-                );
-            }
-        }, 50);
-    });
-}
-
-
-/* =====================================================
-   LOAD TEMPLATES
-===================================================== */
-
-async function loadTemplates() {
-    try {
-        await waitForFirebase();
-
-        const templatesRef =
-            window.firebaseCollection(
-                window.firebaseDB,
-                "templates"
-            );
-
-        const snapshot =
-            await window.firebaseGetDocs(
-                templatesRef
-            );
-
-        templates = [];
-
-        snapshot.forEach(docSnapshot => {
-            const data = docSnapshot.data();
-
-            templates.push({
-                id: docSnapshot.id,
-
-                ...data,
-
-                categories:
-                    Array.isArray(data.categories)
-                        ? data.categories
-                        : [],
-
-                audience:
-                    Array.isArray(data.audience)
-                        ? data.audience
-                        : [],
-
-                features:
-                    Array.isArray(data.features)
-                        ? data.features
-                        : []
-            });
-        });
-
-        console.log(
-            `Berhasil memuat ${templates.length} template.`
-        );
-
-        if (isPublicPage()) {
-            renderTemplates();
-        }
-
-        if (isAdminPage()) {
-            renderAdminList();
-            updateStats();
-        }
-
-    } catch (error) {
-        console.error(
-            "Gagal mengambil template dari Firebase:",
-            error
-        );
-
-        if (isPublicPage()) {
-            const grid =
-                document.getElementById(
-                    "templateGrid"
-                );
-
-            const empty =
-                document.getElementById(
-                    "emptyState"
-                );
-
-            if (grid) {
-                grid.innerHTML = `
-                    <div
-                        style="
-                            grid-column:1/-1;
-                            text-align:center;
-                            padding:50px 20px;
-                        "
-                    >
-                        <h3>
-                            Template gagal dimuat
-                        </h3>
-
-                        <p>
-                            Silakan refresh halaman.
-                        </p>
-                    </div>
-                `;
-            }
-
-            if (empty) {
-                empty.style.display = "none";
-            }
-        }
-    }
 }
 
 
@@ -225,730 +97,135 @@ async function loadTemplates() {
 ===================================================== */
 
 function generateCode() {
+
     let highest = 0;
 
     templates.forEach(template => {
-        const code = String(
-            template.code || ""
-        );
 
-        const number = parseInt(
-            code.replace(/[^0-9]/g, ""),
-            10
-        );
+        const code =
+            String(template.code || "");
+
+        const number =
+            parseInt(
+                code.replace("EZ", ""),
+                10
+            );
 
         if (
             !isNaN(number) &&
             number > highest
         ) {
+
             highest = number;
+
         }
+
     });
 
     return (
         "EZ" +
-        String(highest + 1).padStart(3, "0")
-    );
-}
-
-
-/* =====================================================
-   THEME
-===================================================== */
-
-function loadTheme() {
-    const saved =
-        localStorage.getItem(
-            "ezmoireTheme"
-        );
-
-    if (saved === "dark") {
-        document.body.classList.add("dark");
-    }
-
-    updatePublicThemeButton();
-    updateAdminThemeButton();
-}
-
-
-function updatePublicThemeButton() {
-    const button =
-        document.getElementById("themeBtn");
-
-    if (!button) {
-        return;
-    }
-
-    button.textContent =
-        document.body.classList.contains("dark")
-            ? "☀"
-            : "☾";
-}
-
-
-function updateAdminThemeButton() {
-    const button =
-        document.getElementById(
-            "adminThemeBtn"
-        );
-
-    if (!button) {
-        return;
-    }
-
-    button.textContent =
-        document.body.classList.contains("dark")
-            ? "☀"
-            : "☾";
-}
-
-
-function toggleTheme() {
-    document.body.classList.toggle("dark");
-
-    const isDark =
-        document.body.classList.contains("dark");
-
-    localStorage.setItem(
-        "ezmoireTheme",
-        isDark ? "dark" : "light"
+        String(highest + 1)
+            .padStart(3, "0")
     );
 
-    updatePublicThemeButton();
-    updateAdminThemeButton();
 }
 
 
 /* =====================================================
-   PUBLIC FILTER
+   LOAD TEMPLATES FROM FIRESTORE
 ===================================================== */
 
-function setupFilters() {
+async function loadTemplates() {
 
-    document
-        .querySelectorAll(".category-btn")
-        .forEach(button => {
+    try {
 
-            button.addEventListener(
-                "click",
-                () => {
+        const db =
+            getDB();
 
-                    document
-                        .querySelectorAll(
-                            ".category-btn"
-                        )
-                        .forEach(item => {
-                            item.classList.remove(
-                                "active"
-                            );
-                        });
+        const collection =
+            window.firebaseCollection;
 
-                    button.classList.add("active");
+        const getDocs =
+            window.firebaseGetDocs;
 
-                    currentCategory =
-                        button.dataset.category ||
-                        "all";
+        if (
+            !db ||
+            !collection ||
+            !getDocs
+        ) {
 
-                    renderTemplates();
-                }
+            console.error(
+                "Firebase Firestore belum siap."
             );
-        });
 
+            return;
 
-    document
-        .querySelectorAll(".who-btn")
-        .forEach(button => {
+        }
 
-            button.addEventListener(
-                "click",
-                () => {
-
-                    document
-                        .querySelectorAll(
-                            ".who-btn"
-                        )
-                        .forEach(item => {
-                            item.classList.remove(
-                                "active"
-                            );
-                        });
-
-                    button.classList.add("active");
-
-                    currentAudience =
-                        button.dataset.audience ||
-                        "all";
-
-                    renderTemplates();
-                }
-            );
-        });
-}
-
-
-/* =====================================================
-   PUBLIC RENDER
-===================================================== */
-
-function renderTemplates() {
-
-    const grid =
-        document.getElementById(
-            "templateGrid"
-        );
-
-    const empty =
-        document.getElementById(
-            "emptyState"
-        );
-
-    if (!grid) {
-        return;
-    }
-
-    grid.innerHTML = "";
-
-    const result =
-        templates.filter(template => {
-
-            const categories =
-                Array.isArray(
-                    template.categories
+        const snapshot =
+            await getDocs(
+                collection(
+                    db,
+                    "templates"
                 )
-                    ? template.categories
-                    : [];
-
-            const audience =
-                Array.isArray(
-                    template.audience
-                )
-                    ? template.audience
-                    : [];
-
-
-            const categoryOkay =
-                currentCategory === "all"
-                    ? true
-                    : categories.includes(
-                        currentCategory
-                    );
-
-
-            const audienceOkay =
-                currentAudience === "all"
-                    ? true
-                    : audience.includes(
-                        currentAudience
-                    );
-
-
-            return (
-                categoryOkay &&
-                audienceOkay
             );
+
+        templates = [];
+
+        snapshot.forEach(doc => {
+
+            templates.push({
+
+                id: doc.id,
+
+                ...doc.data()
+
+            });
+
         });
 
+        console.log(
+            `Berhasil memuat ${templates.length} template.`
+        );
 
-    if (result.length === 0) {
+        renderAdminList();
 
-        if (empty) {
-            empty.style.display = "block";
-        }
+        updateStats();
 
-        return;
+    }
+    catch (error) {
+
+        console.error(
+            "Gagal mengambil template dari Firebase:",
+            error
+        );
+
+        templates = [];
+
+        renderAdminList();
+
+        updateStats();
+
+        const message =
+            error?.code ===
+            "permission-denied"
+
+                ? "Firestore menolak akses. Periksa Firestore Rules."
+
+                : "Gagal mengambil data template dari Firebase.";
+
+        console.error(message);
+
     }
 
-
-    if (empty) {
-        empty.style.display = "none";
-    }
-
-
-    result.forEach(template => {
-
-        const card =
-            document.createElement(
-                "article"
-            );
-
-        card.className =
-            "template-card";
-
-
-        const categories =
-            Array.isArray(
-                template.categories
-            )
-                ? template.categories
-                : [];
-
-
-        const tags =
-            categories
-                .slice(0, 3)
-                .map(category => `
-                    <span class="template-tag">
-                        ${safe(category)}
-                    </span>
-                `)
-                .join("");
-
-
-        const image =
-            template.image ||
-            PLACEHOLDER;
-
-
-        card.innerHTML = `
-            <div class="template-cover">
-
-                <img
-                    src="${safe(image)}"
-                    alt="${safe(template.title)}"
-                >
-
-                <span class="template-code">
-                    ${safe(template.code)}
-                </span>
-
-            </div>
-
-
-            <div class="template-info">
-
-                <h3>
-                    ${safe(template.title)}
-                </h3>
-
-
-                <div class="template-price">
-                    ${rupiah(template.price)}
-                </div>
-
-
-                <div class="template-tags">
-                    ${tags}
-                </div>
-
-
-                <div class="template-buttons">
-
-                    <button
-                        class="detail-btn"
-                        type="button"
-                    >
-                        Detail
-                    </button>
-
-
-                    <button
-                        class="order-btn"
-                        type="button"
-                    >
-                        Pesan
-                    </button>
-
-                </div>
-
-            </div>
-        `;
-
-
-        const imageElement =
-            card.querySelector("img");
-
-        if (imageElement) {
-            imageElement.onerror = () => {
-                imageElement.src =
-                    PLACEHOLDER;
-            };
-        }
-
-
-        const detailButton =
-            card.querySelector(
-                ".detail-btn"
-            );
-
-        if (detailButton) {
-            detailButton.addEventListener(
-                "click",
-                () => {
-                    openTemplate(
-                        template.id
-                    );
-                }
-            );
-        }
-
-
-        const orderButton =
-            card.querySelector(
-                ".order-btn"
-            );
-
-        if (orderButton) {
-            orderButton.addEventListener(
-                "click",
-                () => {
-                    orderTemplate(
-                        template.id
-                    );
-                }
-            );
-        }
-
-
-        grid.appendChild(card);
-    });
 }
 
 
 /* =====================================================
-   DETAIL MODAL
+   LOGIN FIREBASE
 ===================================================== */
 
-function openTemplate(id) {
-
-    const template =
-        templates.find(
-            item =>
-                String(item.id) ===
-                String(id)
-        );
-
-    if (!template) {
-        return;
-    }
-
-
-    const modal =
-        document.getElementById(
-            "detailModal"
-        );
-
-    if (!modal) {
-        return;
-    }
-
-
-    const image =
-        document.getElementById(
-            "detailImage"
-        );
-
-    const code =
-        document.getElementById(
-            "detailCode"
-        );
-
-    const title =
-        document.getElementById(
-            "detailTitle"
-        );
-
-    const price =
-        document.getElementById(
-            "detailPrice"
-        );
-
-    const categories =
-        document.getElementById(
-            "detailCategories"
-        );
-
-    const audience =
-        document.getElementById(
-            "detailAudience"
-        );
-
-    const features =
-        document.getElementById(
-            "detailFeatures"
-        );
-
-    const preview =
-        document.getElementById(
-            "previewBtn"
-        );
-
-    const whatsapp =
-        document.getElementById(
-            "detailWhatsapp"
-        );
-
-
-    /* IMAGE */
-
-    if (image) {
-
-        image.src =
-            template.image ||
-            PLACEHOLDER;
-
-        image.alt =
-            template.title || "";
-
-        image.onerror = () => {
-            image.src =
-                PLACEHOLDER;
-        };
-    }
-
-
-    /* BASIC INFO */
-
-    if (code) {
-        code.textContent =
-            template.code || "";
-    }
-
-    if (title) {
-        title.textContent =
-            template.title || "";
-    }
-
-    if (price) {
-        price.textContent =
-            rupiah(template.price);
-    }
-
-
-    /* CATEGORIES */
-
-    if (categories) {
-
-        const list =
-            Array.isArray(
-                template.categories
-            )
-                ? template.categories
-                : [];
-
-        categories.innerHTML =
-            list
-                .map(item => `
-                    <span>
-                        ${safe(item)}
-                    </span>
-                `)
-                .join("");
-    }
-
-
-    /* AUDIENCE */
-
-    if (audience) {
-
-        const list =
-            Array.isArray(
-                template.audience
-            )
-                ? template.audience
-                : [];
-
-        audience.innerHTML =
-            list
-                .map(item => `
-                    <span>
-                        ${safe(item)}
-                    </span>
-                `)
-                .join("");
-    }
-
-
-    /* FEATURES */
-
-    if (features) {
-
-        const featureList =
-            Array.isArray(
-                template.features
-            )
-                ? template.features
-                : [];
-
-
-        features.innerHTML =
-            featureList.length
-                ? featureList
-                    .map(item => `
-                        <div>
-                            ${safe(item)}
-                        </div>
-                    `)
-                    .join("")
-                : `
-                    <div>
-                        Belum ada fitur khusus.
-                    </div>
-                `;
-    }
-
-
-    /* PREVIEW */
-
-    if (preview) {
-
-        preview.onclick = null;
-
-        if (template.link) {
-
-            preview.href =
-                template.link;
-
-            preview.target =
-                "_blank";
-
-            preview.rel =
-                "noopener noreferrer";
-
-        } else {
-
-            preview.href = "#";
-
-            preview.onclick =
-                event => {
-
-                    event.preventDefault();
-
-                    alert(
-                        "Preview website belum ditambahkan."
-                    );
-                };
-        }
-    }
-
-
-    /* WHATSAPP */
-
-    if (whatsapp) {
-
-        whatsapp.onclick = () => {
-            orderTemplate(
-                template.id
-            );
-        };
-    }
-
-
-    modal.classList.add("show");
-}
-
-
-/* =====================================================
-   WHATSAPP
-===================================================== */
-
-function orderTemplate(id) {
-
-    const template =
-        templates.find(
-            item =>
-                String(item.id) ===
-                String(id)
-        );
-
-    if (!template) {
-        return;
-    }
-
-
-    const message =
-        `Halo Ezmoire, saya tertarik dengan template "${template.title}" (${template.code}). Apakah saya bisa memesan template ini?`;
-
-
-    const url =
-        `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(message)}`;
-
-
-    window.open(
-        url,
-        "_blank"
-    );
-}
-
-
-/* =====================================================
-   MODAL CLOSE
-===================================================== */
-
-function setupModalClose() {
-
-    const modal =
-        document.getElementById(
-            "detailModal"
-        );
-
-    const close =
-        document.getElementById(
-            "detailClose"
-        );
-
-
-    if (close) {
-
-        close.addEventListener(
-            "click",
-            () => {
-
-                if (modal) {
-                    modal.classList.remove(
-                        "show"
-                    );
-                }
-            }
-        );
-    }
-
-
-    if (modal) {
-
-        modal.addEventListener(
-            "click",
-            event => {
-
-                if (
-                    event.target ===
-                    modal
-                ) {
-
-                    modal.classList.remove(
-                        "show"
-                    );
-                }
-            }
-        );
-    }
-
-
-    document.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key ===
-                "Escape"
-            ) {
-
-                if (modal) {
-
-                    modal.classList.remove(
-                        "show"
-                    );
-                }
-            }
-        }
-    );
-}
-
-
-/* =====================================================
-   ADMIN LOGIN
-===================================================== */
-
-async function loginAdmin() {
+async function login() {
 
     const emailInput =
         document.getElementById(
@@ -965,181 +242,199 @@ async function loginAdmin() {
             "loginError"
         );
 
-    const loginButton =
+    const button =
         document.getElementById(
             "loginBtn"
         );
 
 
-    if (
-        !emailInput ||
-        !passwordInput
-    ) {
+    const email =
+        emailInput
+            ? emailInput.value.trim()
+            : "";
+
+    const password =
+        passwordInput
+            ? passwordInput.value
+            : "";
+
+
+    error.textContent = "";
+
+
+    /* =========================
+       VALIDASI
+    ========================= */
+
+    if (!email) {
+
+        error.textContent =
+            "Masukkan email admin.";
+
         return;
+
     }
 
 
-    const email =
-        emailInput.value.trim();
+    if (!password) {
 
-    const password =
-        passwordInput.value;
-
-
-    if (
-        !email ||
-        !password
-    ) {
-
-        if (error) {
-            error.textContent =
-                "Email dan password wajib diisi.";
-        }
+        error.textContent =
+            "Masukkan password.";
 
         return;
+
+    }
+
+
+    /* =========================
+       CEK EMAIL ADMIN
+    ========================= */
+
+    if (
+        email.toLowerCase() !==
+        ADMIN_EMAIL.toLowerCase()
+    ) {
+
+        error.textContent =
+            "Email tersebut bukan email admin.";
+
+        return;
+
     }
 
 
     try {
 
-        await waitForFirebase();
+        button.disabled = true;
+
+        button.textContent =
+            "Logging in...";
 
 
-        if (
-            !window.firebaseAuth ||
-            !window.firebaseSignIn
-        ) {
+        const auth =
+            getAuth();
+
+        const signIn =
+            window.firebaseSignIn;
+
+
+        if (!auth || !signIn) {
 
             throw new Error(
                 "Firebase Authentication belum siap."
             );
+
         }
 
 
-        if (error) {
-            error.textContent = "";
-        }
+        const result =
+            await signIn(
+                auth,
+                email,
+                password
+            );
 
 
-        if (loginButton) {
-
-            loginButton.disabled = true;
-
-            loginButton.textContent =
-                "Logging in...";
-        }
-
-
-        await window.firebaseSignIn(
-            window.firebaseAuth,
-            email,
-            password
-        );
+        currentUser =
+            result.user;
 
 
         console.log(
-            "Login Firebase berhasil."
+            "Admin login:",
+            currentUser.email
         );
 
 
-    } catch (firebaseError) {
+        showDashboard();
+
+
+    }
+    catch (error) {
 
         console.error(
-            "Login Firebase gagal:",
-            firebaseError
+            "Login gagal:",
+            error
         );
 
 
-        if (error) {
+        switch (error.code) {
 
-            switch (
-                firebaseError.code
-            ) {
+            case "auth/invalid-credential":
 
-                case "auth/invalid-credential":
-                case "auth/wrong-password":
-                case "auth/user-not-found":
+                errorMessage(
+                    "Email atau password salah."
+                );
 
-                    error.textContent =
-                        "Email atau password salah.";
-
-                    break;
+                break;
 
 
-                case "auth/invalid-email":
+            case "auth/invalid-email":
 
-                    error.textContent =
-                        "Format email tidak valid.";
+                errorMessage(
+                    "Format email tidak valid."
+                );
 
-                    break;
-
-
-                case "auth/user-disabled":
-
-                    error.textContent =
-                        "Akun admin dinonaktifkan.";
-
-                    break;
+                break;
 
 
-                case "auth/too-many-requests":
+            case "auth/user-disabled":
 
-                    error.textContent =
-                        "Terlalu banyak percobaan. Coba lagi nanti.";
+                errorMessage(
+                    "Akun admin dinonaktifkan."
+                );
 
-                    break;
+                break;
 
 
-                default:
+            case "auth/too-many-requests":
 
-                    error.textContent =
-                        "Login gagal. Periksa email dan password.";
-            }
+                errorMessage(
+                    "Terlalu banyak percobaan. Coba lagi nanti."
+                );
+
+                break;
+
+
+            default:
+
+                errorMessage(
+                    error.message ||
+                    "Login gagal."
+                );
+
         }
 
-    } finally {
-
-        if (loginButton) {
-
-            loginButton.disabled =
-                false;
-
-            loginButton.textContent =
-                "Login";
-        }
     }
+    finally {
+
+        button.disabled = false;
+
+        button.textContent =
+            "Login";
+
+    }
+
 }
 
 
 /* =====================================================
-   SHOW LOGIN
+   LOGIN ERROR
 ===================================================== */
 
-function showLogin() {
+function errorMessage(message) {
 
-    const loginScreen =
+    const error =
         document.getElementById(
-            "loginScreen"
+            "loginError"
         );
 
-    const dashboard =
-        document.getElementById(
-            "adminDashboard"
-        );
+    if (error) {
 
+        error.textContent =
+            message;
 
-    if (loginScreen) {
-        loginScreen.classList.remove(
-            "hidden"
-        );
     }
 
-
-    if (dashboard) {
-        dashboard.classList.add(
-            "hidden"
-        );
-    }
 }
 
 
@@ -1149,89 +444,124 @@ function showLogin() {
 
 async function showDashboard() {
 
-    const loginScreen =
-        document.getElementById(
+    document
+        .getElementById(
             "loginScreen"
+        )
+        .classList.add(
+            "hidden"
         );
 
-    const dashboard =
-        document.getElementById(
+
+    document
+        .getElementById(
             "adminDashboard"
-        );
-
-
-    if (loginScreen) {
-        loginScreen.classList.add(
+        )
+        .classList.remove(
             "hidden"
         );
-    }
 
 
-    if (dashboard) {
-        dashboard.classList.remove(
-            "hidden"
-        );
-    }
+    renderAdminList();
+
+    updateStats();
 
 
     await loadTemplates();
+
 }
 
 
 /* =====================================================
-   AUTH STATE
+   LOGOUT
 ===================================================== */
 
-async function setupAuth() {
+async function logout() {
 
     try {
 
-        await waitForFirebase();
+        const auth =
+            getAuth();
+
+        const signOut =
+            window.firebaseSignOut;
 
 
-        window.firebaseOnAuthStateChanged(
-            window.firebaseAuth,
-            async user => {
+        if (
+            auth &&
+            signOut
+        ) {
 
-                currentUser =
-                    user;
+            await signOut(auth);
 
-
-                if (user) {
-
-                    console.log(
-                        "Admin login:",
-                        user.email
-                    );
-
-                    await showDashboard();
-
-                } else {
-
-                    console.log(
-                        "Admin belum login."
-                    );
-
-                    showLogin();
-                }
-            }
-        );
+        }
 
 
-    } catch (error) {
+        currentUser = null;
+
+        templates = [];
+
+
+        document
+            .getElementById(
+                "adminDashboard"
+            )
+            .classList.add(
+                "hidden"
+            );
+
+
+        document
+            .getElementById(
+                "loginScreen"
+            )
+            .classList.remove(
+                "hidden"
+            );
+
+
+        const password =
+            document.getElementById(
+                "adminPassword"
+            );
+
+        if (password) {
+
+            password.value = "";
+
+        }
+
+
+        const error =
+            document.getElementById(
+                "loginError"
+            );
+
+        if (error) {
+
+            error.textContent = "";
+
+        }
+
+
+    }
+    catch (error) {
 
         console.error(
-            "Auth Firebase gagal:",
+            "Logout gagal:",
             error
         );
 
-        showLogin();
     }
+
 }
 
 
 /* =====================================================
-   IMAGE UPLOAD PREVIEW
+   IMAGE PREVIEW
+   -----------------------------------------------
+   GAMBAR OPSIONAL.
+   TIDAK DIUPLOAD KE FIREBASE STORAGE.
 ===================================================== */
 
 function setupImageUpload() {
@@ -1247,11 +577,10 @@ function setupImageUpload() {
         );
 
 
-    if (
-        !input ||
-        !preview
-    ) {
+    if (!input || !preview) {
+
         return;
+
     }
 
 
@@ -1271,14 +600,20 @@ function setupImageUpload() {
 
 
             if (!file) {
+
                 return;
+
             }
 
 
             const allowed = [
+
                 "image/jpeg",
+
                 "image/png",
+
                 "image/webp"
+
             ];
 
 
@@ -1295,6 +630,7 @@ function setupImageUpload() {
                 input.value = "";
 
                 return;
+
             }
 
 
@@ -1310,6 +646,7 @@ function setupImageUpload() {
                 input.value = "";
 
                 return;
+
             }
 
 
@@ -1321,21 +658,29 @@ function setupImageUpload() {
                 event => {
 
                     preview.innerHTML = `
+
                         <img
                             src="${event.target.result}"
                             alt="Preview"
                         >
+
                     `;
+
 
                     preview.classList.add(
                         "show"
                     );
+
                 };
 
 
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(
+                file
+            );
+
         }
     );
+
 }
 
 
@@ -1345,110 +690,115 @@ function setupImageUpload() {
 
 async function addTemplate() {
 
-    if (!currentUser) {
+    const title =
+        document
+            .getElementById(
+                "templateTitle"
+            )
+            .value
+            .trim();
 
-        alert(
-            "Silakan login terlebih dahulu."
-        );
 
-        return;
-    }
+    const price =
+        document
+            .getElementById(
+                "templatePrice"
+            )
+            .value;
 
 
-    const titleInput =
-        document.getElementById(
-            "templateTitle"
-        );
+    const link =
+        document
+            .getElementById(
+                "templateLink"
+            )
+            .value
+            .trim();
 
-    const priceInput =
-        document.getElementById(
-            "templatePrice"
-        );
-
-    const linkInput =
-        document.getElementById(
-            "templateLink"
-        );
 
     const imageInput =
         document.getElementById(
             "templateImage"
         );
 
-    const button =
-        document.getElementById(
-            "addTemplateBtn"
-        );
-
-
-    if (
-        !titleInput ||
-        !priceInput ||
-        !linkInput ||
-        !imageInput
-    ) {
-
-        console.error(
-            "Form template tidak lengkap."
-        );
-
-        return;
-    }
-
-
-    const title =
-        titleInput.value.trim();
-
-    const price =
-        priceInput.value;
-
-    const link =
-        linkInput.value.trim();
 
     const imageFile =
-        imageInput.files[0];
+        imageInput &&
+        imageInput.files
+            ? imageInput.files[0]
+            : null;
 
+
+    /* =========================
+       VALIDASI
+       GAMBAR TIDAK WAJIB
+    ========================= */
 
     if (
         !title ||
-        price === "" ||
-        !imageFile
+        !price
     ) {
 
         alert(
-            "Cover, judul, dan harga wajib diisi."
+            "Judul dan harga wajib diisi."
         );
 
         return;
+
     }
 
 
-    const categories = [
-        ...document.querySelectorAll(
-            ".category-check:checked"
-        )
-    ].map(
-        input => input.value
-    );
+    /* =========================
+       CATEGORIES
+    ========================= */
+
+    const categories =
+        [
+            ...document.querySelectorAll(
+                ".category-check:checked"
+            )
+        ]
+        .map(
+            input =>
+                input.value
+        );
 
 
-    const audience = [
-        ...document.querySelectorAll(
-            ".audience-check:checked"
-        )
-    ].map(
-        input => input.value
-    );
+    /* =========================
+       AUDIENCE
+    ========================= */
+
+    const audience =
+        [
+            ...document.querySelectorAll(
+                ".audience-check:checked"
+            )
+        ]
+        .map(
+            input =>
+                input.value
+        );
 
 
-    const features = [
-        ...document.querySelectorAll(
-            ".feature-check:checked"
-        )
-    ].map(
-        input => input.value
-    );
+    /* =========================
+       FEATURES
+    ========================= */
 
+    const features =
+        [
+            ...document.querySelectorAll(
+                ".feature-check:checked"
+            )
+        ]
+        .map(
+            input =>
+                input.value
+        );
+
+
+    /* =========================
+       CATEGORY VALIDATION
+    ========================= */
 
     if (!categories.length) {
 
@@ -1457,8 +807,13 @@ async function addTemplate() {
         );
 
         return;
+
     }
 
+
+    /* =========================
+       AUDIENCE VALIDATION
+    ========================= */
 
     if (!audience.length) {
 
@@ -1467,208 +822,249 @@ async function addTemplate() {
         );
 
         return;
+
     }
 
 
-    if (
-        !window.firebaseStorage ||
-        !window.firebaseStorageRef ||
-        !window.firebaseUploadBytes ||
-        !window.firebaseGetDownloadURL
-    ) {
+    /* =========================
+       BUTTON
+    ========================= */
 
-        alert(
-            "Firebase Storage belum siap."
+    const button =
+        document.getElementById(
+            "addTemplateBtn"
         );
 
-        return;
-    }
 
+    button.disabled = true;
 
-    if (
-        !window.firebaseSetDoc ||
-        !window.firebaseDoc
-    ) {
-
-        alert(
-            "Firestore belum siap."
-        );
-
-        return;
-    }
-
-
-    if (button) {
-
-        button.disabled = true;
-
-        button.innerHTML =
-            "Uploading...";
-    }
+    button.innerHTML =
+        "Saving...";
 
 
     try {
 
-        await waitForFirebase();
+        /* =========================
+           CEK LOGIN
+        ========================= */
+
+        const auth =
+            getAuth();
+
+        const user =
+            auth.currentUser;
 
 
-        /* =============================================
+        if (!user) {
+
+            throw new Error(
+                "Sesi admin sudah berakhir. Silakan login kembali."
+            );
+
+        }
+
+
+        if (
+            user.email.toLowerCase() !==
+            ADMIN_EMAIL.toLowerCase()
+        ) {
+
+            throw new Error(
+                "Akun ini bukan akun admin."
+            );
+
+        }
+
+
+        /* =========================
            GENERATE CODE
-        ============================================= */
+        ========================= */
 
         const code =
             generateCode();
 
 
-        /* =============================================
-           EXTENSION
-        ============================================= */
+        /* =========================
+           IMAGE
+           --------------------------------
+           TIDAK DIUPLOAD.
+           Hanya disimpan sebagai string kosong.
+        ========================= */
 
-        let extension =
-            imageFile.name
-                .split(".")
-                .pop()
-                .toLowerCase();
+        let imageURL = "";
 
 
-        if (extension === "jpeg") {
-            extension = "jpg";
+        if (imageFile) {
+
+            console.log(
+                "Gambar dipilih, tetapi Firebase Storage tidak digunakan."
+            );
+
+            console.log(
+                "Template tetap disimpan tanpa gambar."
+            );
+
         }
 
 
-        /* =============================================
-           STORAGE PATH
-        ============================================= */
-
-        const filePath =
-            `templates/${code}.${extension}`;
-
-
-        const storageRef =
-            window.firebaseStorageRef(
-                window.firebaseStorage,
-                filePath
-            );
-
-
-        /* =============================================
-           UPLOAD IMAGE
-        ============================================= */
-
-        console.log(
-            `Mengupload ${filePath}...`
-        );
-
-
-        await window.firebaseUploadBytes(
-            storageRef,
-            imageFile
-        );
-
-
-        console.log(
-            "Upload gambar berhasil."
-        );
-
-
-        /* =============================================
-           DOWNLOAD URL
-        ============================================= */
-
-        const imageURL =
-            await window.firebaseGetDownloadURL(
-                storageRef
-            );
-
-
-        console.log(
-            "URL gambar berhasil dibuat."
-        );
-
-
-        /* =============================================
+        /* =========================
            TEMPLATE DATA
-        ============================================= */
+        ========================= */
 
         const template = {
 
-            code,
+            code:
 
-            title,
+                code,
+
+
+            title:
+
+                title,
+
 
             price:
+
                 Number(price),
 
+
             image:
+
                 imageURL,
 
-            link,
 
-            categories,
+            link:
 
-            audience,
+                link,
 
-            features,
+
+            categories:
+
+                categories,
+
+
+            audience:
+
+                audience,
+
+
+            features:
+
+                features,
+
 
             createdAt:
+
                 new Date().toISOString(),
 
+
             createdBy:
-                currentUser.uid
+
+                user.email
+
         };
 
 
-        /* =============================================
-           FIRESTORE
-        ============================================= */
+        /* =========================
+           SAVE FIRESTORE
+        ========================= */
 
-        await window.firebaseSetDoc(
-            window.firebaseDoc(
-                window.firebaseDB,
+        const db =
+            getDB();
+
+
+        const collection =
+            window.firebaseCollection;
+
+
+        const doc =
+            window.firebaseDoc;
+
+
+        const setDoc =
+            window.firebaseSetDoc;
+
+
+        if (
+            !db ||
+            !collection ||
+            !doc ||
+            !setDoc
+        ) {
+
+            throw new Error(
+                "Firebase Firestore belum siap."
+            );
+
+        }
+
+
+        /*
+            ID dokumen menggunakan code:
+            EZ001
+            EZ002
+            EZ003
+        */
+
+        await setDoc(
+
+            doc(
+                db,
                 "templates",
                 code
             ),
+
             template
+
         );
 
 
-        console.log(
-            "Template berhasil disimpan ke Firestore."
-        );
-
-
-        /* =============================================
-           LOCAL ARRAY
-        ============================================= */
+        /* =========================
+           UPDATE LOCAL ARRAY
+        ========================= */
 
         templates.push({
+
             id: code,
+
             ...template
+
         });
 
 
-        /* =============================================
-           CLEAR FORM
-        ============================================= */
+        /* =========================
+           RESET FORM
+        ========================= */
 
         clearForm();
 
 
-        /* =============================================
-           REFRESH UI
-        ============================================= */
+        /* =========================
+           UPDATE UI
+        ========================= */
 
         renderAdminList();
 
         updateStats();
 
 
+        /* =========================
+           SUCCESS
+        ========================= */
+
         alert(
-            `${code} berhasil ditambahkan ke Firebase.`
+            `${code} berhasil ditambahkan.`
         );
 
 
-    } catch (error) {
+        console.log(
+            "Template berhasil disimpan:",
+            template
+        );
+
+
+    }
+    catch (error) {
 
         console.error(
             "Gagal menambahkan template:",
@@ -1676,22 +1072,35 @@ async function addTemplate() {
         );
 
 
-        alert(
-            "Gagal menyimpan template. Buka Console (F12) untuk melihat detail error."
-        );
+        if (
+            error.code ===
+            "permission-denied"
+        ) {
 
+            alert(
+                "Firebase menolak penyimpanan. Periksa Firestore Rules."
+            );
 
-    } finally {
-
-        if (button) {
-
-            button.disabled =
-                false;
-
-            button.innerHTML =
-                "Add Template <span>+</span>";
         }
+        else {
+
+            alert(
+                error.message ||
+                "Gagal menyimpan template."
+            );
+
+        }
+
     }
+    finally {
+
+        button.disabled = false;
+
+        button.innerHTML =
+            "Add Template <span>+</span>";
+
+    }
+
 }
 
 
@@ -1723,19 +1132,30 @@ function clearForm() {
 
 
     if (title) {
+
         title.value = "";
+
     }
+
 
     if (price) {
+
         price.value = "";
+
     }
+
 
     if (link) {
+
         link.value = "";
+
     }
 
+
     if (image) {
+
         image.value = "";
+
     }
 
 
@@ -1743,9 +1163,14 @@ function clearForm() {
         .querySelectorAll(
             ".category-check, .audience-check, .feature-check"
         )
-        .forEach(input => {
-            input.checked = false;
-        });
+        .forEach(
+            input => {
+
+                input.checked =
+                    false;
+
+            }
+        );
 
 
     const preview =
@@ -1761,12 +1186,14 @@ function clearForm() {
         preview.classList.remove(
             "show"
         );
+
     }
+
 }
 
 
 /* =====================================================
-   ADMIN LIST
+   RENDER ADMIN TEMPLATE LIST
 ===================================================== */
 
 function renderAdminList() {
@@ -1778,16 +1205,23 @@ function renderAdminList() {
 
 
     if (!container) {
+
         return;
+
     }
 
 
     container.innerHTML = "";
 
 
-    if (templates.length === 0) {
+    /* =========================
+       EMPTY
+    ========================= */
+
+    if (!templates.length) {
 
         container.innerHTML = `
+
             <div
                 class="empty-state"
                 style="display:block;padding:45px 10px"
@@ -1806,146 +1240,201 @@ function renderAdminList() {
                 </p>
 
             </div>
+
         `;
 
         return;
+
     }
 
 
-    const list =
-        [...templates].sort(
-            (a, b) => {
+    /* =========================
+       SORT
+    ========================= */
 
-                const dateA =
-                    new Date(
-                        a.createdAt || 0
+    const sorted =
+        [...templates]
+            .sort(
+                (a, b) => {
+
+                    const aCode =
+                        String(
+                            a.code || ""
+                        );
+
+                    const bCode =
+                        String(
+                            b.code || ""
+                        );
+
+
+                    const aNumber =
+                        parseInt(
+                            aCode.replace(
+                                "EZ",
+                                ""
+                            )
+                        ) || 0;
+
+
+                    const bNumber =
+                        parseInt(
+                            bCode.replace(
+                                "EZ",
+                                ""
+                            )
+                        ) || 0;
+
+
+                    return (
+                        bNumber -
+                        aNumber
                     );
 
-                const dateB =
-                    new Date(
-                        b.createdAt || 0
-                    );
-
-                return dateB - dateA;
-            }
-        );
-
-
-    list.forEach(template => {
-
-        const item =
-            document.createElement(
-                "div"
+                }
             );
 
 
-        item.className =
-            "admin-template-item";
+    /* =========================
+       CREATE ITEMS
+    ========================= */
+
+    sorted.forEach(
+        template => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
 
 
-        const tags =
-            (
-                Array.isArray(
-                    template.categories
+            item.className =
+                "admin-template-item";
+
+
+            /* =========================
+               TAGS
+            ========================= */
+
+            const tags =
+                (
+                    template.categories ||
+                    []
                 )
-                    ? template.categories
-                    : []
-            )
                 .slice(0, 3)
                 .map(
                     category => `
+
                         <span>
                             ${safe(category)}
                         </span>
+
                     `
                 )
                 .join("");
 
 
-        const image =
-            template.image ||
-            ADMIN_PLACEHOLDER;
+            /* =========================
+               IMAGE
+               --------------------------------
+               Kalau image kosong,
+               gunakan placeholder.
+            ========================= */
+
+            const imageSource =
+                template.image
+                    ? safe(
+                        template.image
+                    )
+                    : "https://placehold.co/100x120/15181e/ffffff?text=EZ";
 
 
-        item.innerHTML = `
-            <img
-                class="admin-thumb"
-                src="${safe(image)}"
-                alt=""
-            >
+            /* =========================
+               HTML
+            ========================= */
 
+            item.innerHTML = `
 
-            <div
-                class="admin-template-info"
-            >
-
-                <strong>
-                    ${safe(template.title)}
-                </strong>
-
-                <span>
-                    ${safe(template.code)}
-                    ·
-                    ${rupiah(template.price)}
-                </span>
-
-
-                <div
-                    class="admin-template-tags"
+                <img
+                    class="admin-thumb"
+                    src="${imageSource}"
+                    alt=""
+                    onerror="
+                        this.src='https://placehold.co/100x120/15181e/ffffff?text=EZ'
+                    "
                 >
-                    ${tags}
+
+
+                <div class="admin-template-info">
+
+                    <strong>
+                        ${safe(
+                            template.title
+                        )}
+                    </strong>
+
+
+                    <span>
+
+                        ${safe(
+                            template.code
+                        )}
+
+                        ·
+
+                        ${rupiah(
+                            template.price
+                        )}
+
+                    </span>
+
+
+                    <div class="admin-template-tags">
+
+                        ${tags}
+
+                    </div>
+
                 </div>
 
-            </div>
+
+                <div class="admin-item-actions">
+
+                    <button
+                        type="button"
+                        class="preview-template-btn"
+                        data-id="${safe(
+                            template.id
+                        )}"
+                    >
+                        Preview
+                    </button>
 
 
-            <div
-                class="admin-item-actions"
-            >
+                    <button
+                        type="button"
+                        class="delete delete-template-btn"
+                        data-id="${safe(
+                            template.id
+                        )}"
+                    >
+                        Delete
+                    </button>
 
-                <button
-                    type="button"
-                    class="admin-preview-btn"
-                >
-                    Preview
-                </button>
+                </div>
 
-
-                <button
-                    type="button"
-                    class="delete admin-delete-btn"
-                >
-                    Delete
-                </button>
-
-            </div>
-        `;
+            `;
 
 
-        const imageElement =
-            item.querySelector(
-                ".admin-thumb"
-            );
+            /* =========================
+               PREVIEW BUTTON
+            ========================= */
 
+            const previewButton =
+                item.querySelector(
+                    ".preview-template-btn"
+                );
 
-        if (imageElement) {
-
-            imageElement.onerror =
-                () => {
-
-                    imageElement.src =
-                        ADMIN_PLACEHOLDER;
-                };
-        }
-
-
-        const previewButton =
-            item.querySelector(
-                ".admin-preview-btn"
-            );
-
-
-        if (previewButton) {
 
             previewButton.addEventListener(
                 "click",
@@ -1954,18 +1443,20 @@ function renderAdminList() {
                     previewTemplate(
                         template.id
                     );
+
                 }
             );
-        }
 
 
-        const deleteButton =
-            item.querySelector(
-                ".admin-delete-btn"
-            );
+            /* =========================
+               DELETE BUTTON
+            ========================= */
 
+            const deleteButton =
+                item.querySelector(
+                    ".delete-template-btn"
+                );
 
-        if (deleteButton) {
 
             deleteButton.addEventListener(
                 "click",
@@ -1974,18 +1465,23 @@ function renderAdminList() {
                     deleteTemplate(
                         template.id
                     );
+
                 }
             );
+
+
+            container.appendChild(
+                item
+            );
+
         }
+    );
 
-
-        container.appendChild(item);
-    });
 }
 
 
 /* =====================================================
-   ADMIN PREVIEW
+   PREVIEW TEMPLATE
 ===================================================== */
 
 function previewTemplate(id) {
@@ -1993,13 +1489,14 @@ function previewTemplate(id) {
     const template =
         templates.find(
             item =>
-                String(item.id) ===
-                String(id)
+                item.id === id
         );
 
 
     if (!template) {
+
         return;
+
     }
 
 
@@ -2010,6 +1507,7 @@ function previewTemplate(id) {
         );
 
         return;
+
     }
 
 
@@ -2017,35 +1515,27 @@ function previewTemplate(id) {
         template.link,
         "_blank"
     );
+
 }
 
 
 /* =====================================================
-   ADMIN DELETE
+   DELETE TEMPLATE
 ===================================================== */
 
 async function deleteTemplate(id) {
 
-    if (!currentUser) {
-
-        alert(
-            "Silakan login terlebih dahulu."
-        );
-
-        return;
-    }
-
-
     const template =
         templates.find(
             item =>
-                String(item.id) ===
-                String(id)
+                item.id === id
         );
 
 
     if (!template) {
+
         return;
+
     }
 
 
@@ -2056,100 +1546,62 @@ async function deleteTemplate(id) {
 
 
     if (!confirmed) {
+
         return;
+
     }
 
 
     try {
 
-        await waitForFirebase();
+        const auth =
+            getAuth();
 
 
-        /* =============================================
-           DELETE FIRESTORE
-        ============================================= */
-
-        await window.firebaseDeleteDoc(
-            window.firebaseDoc(
-                window.firebaseDB,
-                "templates",
-                String(template.id)
-            )
-        );
+        const user =
+            auth.currentUser;
 
 
-        /* =============================================
-           DELETE STORAGE
-        ============================================= */
+        if (!user) {
 
-        if (
-            template.code &&
-            template.image &&
-            window.firebaseDeleteObject
-        ) {
+            throw new Error(
+                "Sesi admin sudah berakhir."
+            );
 
-            try {
-
-                let extension = "jpg";
-
-
-                const match =
-                    String(
-                        template.image
-                    ).match(
-                        /\.(jpg|jpeg|png|webp)(?:\?|$)/i
-                    );
-
-
-                if (match) {
-
-                    extension =
-                        match[1].toLowerCase();
-
-                    if (
-                        extension === "jpeg"
-                    ) {
-                        extension = "jpg";
-                    }
-                }
-
-
-                const imageRef =
-                    window.firebaseStorageRef(
-                        window.firebaseStorage,
-                        `templates/${template.code}.${extension}`
-                    );
-
-
-                await window.firebaseDeleteObject(
-                    imageRef
-                );
-
-
-                console.log(
-                    "Gambar Storage berhasil dihapus."
-                );
-
-
-            } catch (storageError) {
-
-                console.warn(
-                    "Gambar Storage tidak berhasil dihapus:",
-                    storageError
-                );
-            }
         }
 
 
-        /* =============================================
-           LOCAL ARRAY
-        ============================================= */
+        const db =
+            getDB();
+
+
+        const doc =
+            window.firebaseDoc;
+
+
+        const deleteDoc =
+            window.firebaseDeleteDoc;
+
+
+        await deleteDoc(
+
+            doc(
+                db,
+                "templates",
+                id
+            )
+
+        );
+
+
+        /* =========================
+           REMOVE LOCAL
+        ========================= */
 
         templates =
             templates.filter(
                 item =>
-                    String(item.id) !==
-                    String(id)
+                    item.id !== id
             );
 
 
@@ -2163,7 +1615,8 @@ async function deleteTemplate(id) {
         );
 
 
-    } catch (error) {
+    }
+    catch (error) {
 
         console.error(
             "Gagal menghapus template:",
@@ -2171,15 +1624,32 @@ async function deleteTemplate(id) {
         );
 
 
-        alert(
-            "Gagal menghapus template. Lihat Console (F12)."
-        );
+        if (
+            error.code ===
+            "permission-denied"
+        ) {
+
+            alert(
+                "Firebase menolak penghapusan. Periksa Firestore Rules."
+            );
+
+        }
+        else {
+
+            alert(
+                error.message ||
+                "Gagal menghapus template."
+            );
+
+        }
+
     }
+
 }
 
 
 /* =====================================================
-   ADMIN STATS
+   STATS
 ===================================================== */
 
 function updateStats() {
@@ -2189,7 +1659,8 @@ function updateStats() {
             "templateCount"
         );
 
-    const next =
+
+    const nextCode =
         document.getElementById(
             "nextCode"
         );
@@ -2199,19 +1670,111 @@ function updateStats() {
 
         count.textContent =
             templates.length;
+
     }
 
 
-    if (next) {
+    if (nextCode) {
 
-        next.textContent =
+        nextCode.textContent =
             generateCode();
+
     }
+
 }
 
 
 /* =====================================================
-   ADMIN SIDEBAR
+   THEME
+===================================================== */
+
+function loadTheme() {
+
+    const theme =
+        localStorage.getItem(
+            "ezmoireTheme"
+        );
+
+
+    if (theme === "dark") {
+
+        document.body.classList.add(
+            "dark"
+        );
+
+    }
+
+
+    updateThemeButton();
+
+}
+
+
+/* =====================================================
+   THEME BUTTON
+===================================================== */
+
+function updateThemeButton() {
+
+    const button =
+        document.getElementById(
+            "adminThemeBtn"
+        );
+
+
+    if (!button) {
+
+        return;
+
+    }
+
+
+    button.textContent =
+
+        document.body.classList.contains(
+            "dark"
+        )
+
+            ? "☀"
+
+            : "☾";
+
+}
+
+
+/* =====================================================
+   TOGGLE THEME
+===================================================== */
+
+function toggleTheme() {
+
+    document.body.classList.toggle(
+        "dark"
+    );
+
+
+    localStorage.setItem(
+
+        "ezmoireTheme",
+
+        document.body.classList.contains(
+            "dark"
+        )
+
+            ? "dark"
+
+            : "light"
+
+    );
+
+
+    updateThemeButton();
+
+}
+
+
+/* =====================================================
+   SIDEBAR
 ===================================================== */
 
 function setupSidebar() {
@@ -2222,362 +1785,328 @@ function setupSidebar() {
         );
 
 
-    buttons.forEach(button => {
+    buttons.forEach(
+        button => {
 
-        button.addEventListener(
-            "click",
-            () => {
+            button.addEventListener(
+                "click",
+                () => {
 
-                buttons.forEach(item => {
-                    item.classList.remove(
+                    buttons.forEach(
+                        item => {
+
+                            item.classList.remove(
+                                "active"
+                            );
+
+                        }
+                    );
+
+
+                    button.classList.add(
                         "active"
                     );
-                });
 
 
-                button.classList.add(
-                    "active"
+                    const section =
+                        button.dataset.section;
+
+
+                    if (
+                        section ===
+                        "add"
+                    ) {
+
+                        const target =
+                            document.getElementById(
+                                "addSection"
+                            );
+
+
+                        if (target) {
+
+                            target.scrollIntoView({
+
+                                behavior:
+                                    "smooth"
+
+                            });
+
+                        }
+
+                    }
+
+
+                    if (
+                        section ===
+                        "templates"
+                    ) {
+
+                        const target =
+                            document.getElementById(
+                                "templatesSection"
+                            );
+
+
+                        if (target) {
+
+                            target.scrollIntoView({
+
+                                behavior:
+                                    "smooth"
+
+                            });
+
+                        }
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   FIREBASE AUTH STATE
+===================================================== */
+
+function setupAuthListener() {
+
+    const auth =
+        getAuth();
+
+
+    const listener =
+        window.firebaseOnAuthStateChanged;
+
+
+    if (
+        !auth ||
+        !listener
+    ) {
+
+        console.error(
+            "Firebase Auth belum siap."
+        );
+
+        return;
+
+    }
+
+
+    listener(
+        auth,
+        async user => {
+
+            if (user) {
+
+                console.log(
+                    "Admin login:",
+                    user.email
                 );
 
 
-                const section =
-                    button.dataset.section;
-
-
                 if (
-                    section ===
-                    "add"
+                    user.email.toLowerCase() !==
+                    ADMIN_EMAIL.toLowerCase()
                 ) {
 
-                    const element =
-                        document.getElementById(
-                            "addSection"
+                    console.warn(
+                        "Akun bukan admin."
+                    );
+
+                    try {
+
+                        await window.firebaseSignOut(
+                            auth
                         );
 
-
-                    if (element) {
-
-                        element.scrollIntoView({
-                            behavior:
-                                "smooth"
-                        });
                     }
+                    catch {}
+
+                    return;
+
                 }
 
 
-                if (
-                    section ===
-                    "templates"
-                ) {
-
-                    const element =
-                        document.getElementById(
-                            "templatesSection"
-                        );
+                currentUser =
+                    user;
 
 
-                    if (element) {
+                showDashboard();
 
-                        element.scrollIntoView({
-                            behavior:
-                                "smooth"
-                        });
-                    }
-                }
             }
-        );
-    });
-}
+
+            else {
+
+                currentUser =
+                    null;
 
 
-/* =====================================================
-   ADMIN THEME
-===================================================== */
-
-function setupAdminTheme() {
-
-    const button =
-        document.getElementById(
-            "adminThemeBtn"
-        );
+                document
+                    .getElementById(
+                        "loginScreen"
+                    )
+                    .classList.remove(
+                        "hidden"
+                    );
 
 
-    if (!button) {
-        return;
-    }
+                document
+                    .getElementById(
+                        "adminDashboard"
+                    )
+                    .classList.add(
+                        "hidden"
+                    );
 
+            }
 
-    button.addEventListener(
-        "click",
-        toggleTheme
+        }
     );
+
 }
 
 
 /* =====================================================
-   PUBLIC THEME
+   ENTER KEY LOGIN
 ===================================================== */
 
-function setupPublicTheme() {
+function setupLoginEnter() {
 
-    const button =
-        document.getElementById(
-            "themeBtn"
-        );
-
-
-    if (!button) {
-        return;
-    }
-
-
-    button.addEventListener(
-        "click",
-        toggleTheme
-    );
-}
-
-
-/* =====================================================
-   LOGIN EVENTS
-===================================================== */
-
-function setupLoginEvents() {
-
-    const loginButton =
-        document.getElementById(
-            "loginBtn"
-        );
-
-
-    if (loginButton) {
-
-        loginButton.addEventListener(
-            "click",
-            loginAdmin
-        );
-    }
-
-
-    const passwordInput =
+    const password =
         document.getElementById(
             "adminPassword"
         );
 
 
-    if (passwordInput) {
+    if (!password) {
 
-        passwordInput.addEventListener(
-            "keydown",
-            event => {
-
-                if (
-                    event.key ===
-                    "Enter"
-                ) {
-
-                    loginAdmin();
-                }
-            }
-        );
-    }
-
-
-    const emailInput =
-        document.getElementById(
-            "adminEmail"
-        );
-
-
-    if (emailInput) {
-
-        emailInput.addEventListener(
-            "keydown",
-            event => {
-
-                if (
-                    event.key ===
-                    "Enter"
-                ) {
-
-                    loginAdmin();
-                }
-            }
-        );
-    }
-
-
-    const logoutButton =
-        document.getElementById(
-            "logoutBtn"
-        );
-
-
-    if (logoutButton) {
-
-        logoutButton.addEventListener(
-            "click",
-            logout
-        );
-    }
-}
-
-
-/* =====================================================
-   LOGOUT
-===================================================== */
-
-async function logout() {
-
-    if (
-        !window.firebaseSignOut ||
-        !window.firebaseAuth
-    ) {
         return;
+
     }
 
 
-    try {
+    password.addEventListener(
+        "keydown",
+        event => {
 
-        await window.firebaseSignOut(
-            window.firebaseAuth
-        );
+            if (
+                event.key ===
+                "Enter"
+            ) {
 
-        currentUser = null;
+                login();
 
+            }
 
-    } catch (error) {
+        }
+    );
 
-        console.error(
-            "Logout gagal:",
-            error
-        );
-    }
 }
 
 
 /* =====================================================
-   ADMIN ADD EVENT
-===================================================== */
-
-function setupAdminEvents() {
-
-    const addButton =
-        document.getElementById(
-            "addTemplateBtn"
-        );
-
-
-    if (addButton) {
-
-        addButton.addEventListener(
-            "click",
-            addTemplate
-        );
-    }
-}
-
-
-/* =====================================================
-   INIT PUBLIC
-===================================================== */
-
-async function initPublic() {
-
-    loadTheme();
-
-    setupPublicTheme();
-
-    setupFilters();
-
-    setupModalClose();
-
-    try {
-
-        await loadTemplates();
-
-    } catch (error) {
-
-        console.error(
-            "Public initialization gagal:",
-            error
-        );
-    }
-}
-
-
-/* =====================================================
-   INIT ADMIN
-===================================================== */
-
-function initAdmin() {
-
-    loadTheme();
-
-    setupAdminTheme();
-
-    setupLoginEvents();
-
-    setupImageUpload();
-
-    setupSidebar();
-
-    setupAdminEvents();
-
-    setupAuth();
-}
-
-
-/* =====================================================
-   WAIT FOR DOM
+   INITIALIZATION
 ===================================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
     () => {
 
-        if (isAdminPage()) {
+        loadTheme();
 
-            initAdmin();
+        setupImageUpload();
 
-        } else {
+        setupSidebar();
 
-            initPublic();
+        setupLoginEnter();
+
+
+        const loginButton =
+            document.getElementById(
+                "loginBtn"
+            );
+
+
+        if (loginButton) {
+
+            loginButton.addEventListener(
+                "click",
+                login
+            );
+
         }
+
+
+        const logoutButton =
+            document.getElementById(
+                "logoutBtn"
+            );
+
+
+        if (logoutButton) {
+
+            logoutButton.addEventListener(
+                "click",
+                logout
+            );
+
+        }
+
+
+        const addButton =
+            document.getElementById(
+                "addTemplateBtn"
+            );
+
+
+        if (addButton) {
+
+            addButton.addEventListener(
+                "click",
+                addTemplate
+            );
+
+        }
+
+
+        const themeButton =
+            document.getElementById(
+                "adminThemeBtn"
+            );
+
+
+        if (themeButton) {
+
+            themeButton.addEventListener(
+                "click",
+                toggleTheme
+            );
+
+        }
+
+
+        /* =========================
+           WAIT FIREBASE
+        ========================= */
+
+        waitForFirebase(
+            () => {
+
+                console.log(
+                    "Firebase siap digunakan oleh script.js."
+                );
+
+
+                setupAuthListener();
+
+            }
+        );
+
     }
 );
-
-
-/* =====================================================
-   GLOBAL FUNCTIONS
-===================================================== */
-
-window.openTemplate =
-    openTemplate;
-
-window.orderTemplate =
-    orderTemplate;
-
-window.login =
-    loginAdmin;
-
-window.loginAdmin =
-    loginAdmin;
-
-window.logout =
-    logout;
-
-window.addTemplate =
-    addTemplate;
-
-window.previewTemplate =
-    previewTemplate;
-
-window.deleteTemplate =
-    deleteTemplate;
-
-window.toggleTheme =
-    toggleTheme;
-
-window.clearForm =
-    clearForm;
